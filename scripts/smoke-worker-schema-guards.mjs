@@ -16,6 +16,12 @@ export function assertWorkerSchemaGuards(context) {
     "inbound email migration must include receipt and attachment metadata tables.",
   );
   assert(
+    coreMigration.includes("carboti_objects") &&
+      coreMigration.includes("carboti_artifacts") &&
+      coreMigration.includes("carboti_lineage_edges"),
+    "Carboti migrations must include object, artifact, and lineage metadata tables.",
+  );
+  assert(
     coreMigration.includes("ALTER TABLE users ADD COLUMN role") &&
       coreMigration.includes("users_role_idx"),
     "user role migration must add users.role and its index.",

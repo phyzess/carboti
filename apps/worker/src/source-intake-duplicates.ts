@@ -1,6 +1,7 @@
 export type DuplicateSourceFileRow = {
   source_file_id: string;
   object_key: string;
+  content_hash: string;
   import_job_id: string | null;
   status: string | null;
 };
@@ -17,6 +18,7 @@ export async function findDuplicateSourceFile(
       SELECT
         source_files.id AS source_file_id,
         source_files.object_key,
+        source_files.content_hash,
         import_jobs.id AS import_job_id,
         import_jobs.status
       FROM source_files

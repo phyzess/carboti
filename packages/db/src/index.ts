@@ -19,6 +19,7 @@ export {
   carbotiApiClients,
   carbotiArtifacts,
   carbotiLineageEdges,
+  carbotiObjects,
   carbotiPipelines,
   carbotiProcessorConfigs,
   carbotiProcessorRuns,

@@ -18,6 +18,11 @@ export function parseMimeAttachments(rawEmail: string): ParsedAttachment[] {
   return collectAttachments(parseMimeEntity(rawEmail));
 }
 
+export function parseMimeTextBody(rawEmail: string): string | undefined {
+  const text = collectTextParts(parseMimeEntity(rawEmail)).join("\n\n").trim();
+  return text || undefined;
+}
+
 type MimeEntity = {
   body: string;
   headers: MimeHeaders;
@@ -50,6 +55,28 @@ function collectAttachments(entity: MimeEntity): ParsedAttachment[] {
       size: bytes.byteLength,
     },
   ];
+}
+
+function collectTextParts(entity: MimeEntity): string[] {
+  const contentType = headerValue(entity.headers, "content-type");
+  const boundary = boundaryFromContentType(contentType);
+  if (boundary) {
+    return splitMultipartBody(entity.body, boundary).flatMap((part) =>
+      collectTextParts(parseMimeEntity(part)),
+    );
+  }
+
+  const disposition = headerValue(entity.headers, "content-disposition");
+  if (/attachment/i.test(disposition)) return [];
+
+  const mediaType = contentType.split(";")[0]?.trim().toLowerCase() || "text/plain";
+  if (mediaType !== "text/plain") return [];
+
+  const transferEncoding = headerValue(entity.headers, "content-transfer-encoding").toLowerCase();
+  const bytes = decodeTransferEncodedBody(entity.body, transferEncoding);
+  const text = new TextDecoder().decode(bytes).trim();
+
+  return text ? [text] : [];
 }
 
 function parseMimeEntity(raw: string): MimeEntity {

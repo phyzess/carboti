@@ -8,6 +8,7 @@ export function createSmokeWorkerInboundContext({ text }) {
     text("apps/worker/src/inbound-email-message-statements.ts"),
     text("apps/worker/src/inbound-email-attachment-statements.ts"),
     text("apps/worker/src/inbound-email-audit-statements.ts"),
+    text("apps/worker/src/carboti-inbound-email-statements.ts"),
   ].join("\n");
   const workerMimeParser = text("apps/worker/src/mime-parser.ts");
   const workerMimeHeaders = text("apps/worker/src/mime-headers.ts");

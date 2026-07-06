@@ -1,3 +1,4 @@
+import { prepareCarbotiInboundEmailStatements } from "./carboti-inbound-email-statements";
 import { prepareInboundEmailAttachmentInserts } from "./inbound-email-attachment-statements";
 import type { InboundEmailAttachmentResult } from "./inbound-email-attachments";
 import { prepareInboundEmailReceivedAuditInsert } from "./inbound-email-audit-statements";
@@ -9,10 +10,12 @@ export type InboundEmailReceiptInput = {
   from: string;
   inboundEmailId: string;
   rawObjectKey: string;
+  rawContentHash: string;
   rawSize: number;
   receivedAt: string;
   status: string;
   subject: string | undefined;
+  textBody: string | undefined;
   to: string;
 };
 
@@ -24,6 +27,7 @@ export function prepareInboundEmailReceiptStatements(
     prepareInboundEmailMessageInsert(env, input),
     ...prepareInboundEmailAttachmentInserts(env, input),
     prepareInboundEmailReceivedAuditInsert(env, input),
+    ...prepareCarbotiInboundEmailStatements(env, input),
   ];
 }
 

@@ -5,6 +5,7 @@ import type { SourceImportDispatchFailure } from "./source-intake-types";
 export async function dispatchSourceImportJob(
   env: Env,
   input: {
+    contentHash: string;
     jobId: string;
     message: ImportJobMessage;
     objectKey: string;
@@ -26,6 +27,7 @@ export async function dispatchSourceImportJob(
 
     return {
       code: "queue_dispatch_failed",
+      contentHash: input.contentHash,
       importJobId: input.jobId,
       message: "Source file was stored, but import job dispatch failed.",
       objectKey: input.objectKey,

@@ -14,6 +14,7 @@ export type SourceIntakeInput = {
 };
 
 export type SourceIntakeSuccessResult = {
+  contentHash: string;
   duplicate: boolean;
   importJobId: string | null;
   objectKey: string;
@@ -34,6 +35,7 @@ export type UnsupportedSourceFileFailure = {
 
 export type SourceImportDispatchFailure = {
   code: "queue_dispatch_failed";
+  contentHash: string;
   importJobId: string;
   message: string;
   objectKey: string;

@@ -92,6 +92,20 @@ export const CarbotiObjectRefSchema = v.object({
   size: v.optional(v.number()),
 });
 
+export const CarbotiStoredObjectSchema = v.object({
+  id: v.string(),
+  kind: CarbotiObjectKindSchema,
+  workspaceId: v.string(),
+  sourceId: v.optional(v.string()),
+  messageId: v.optional(v.string()),
+  objectKey: v.optional(v.string()),
+  contentType: v.optional(v.string()),
+  contentHash: v.optional(v.string()),
+  size: v.optional(v.number()),
+  data: v.optional(v.unknown()),
+  createdAt: v.string(),
+});
+
 export const CarbotiAttachmentSchema = v.object({
   id: v.string(),
   filename: v.string(),
@@ -185,6 +199,7 @@ export const CarbotiWebhookDeliverySchema = v.object({
 export type CarbotiSource = v.InferOutput<typeof CarbotiSourceSchema>;
 export type CarbotiPipeline = v.InferOutput<typeof CarbotiPipelineSchema>;
 export type CarbotiObjectRef = v.InferOutput<typeof CarbotiObjectRefSchema>;
+export type CarbotiStoredObject = v.InferOutput<typeof CarbotiStoredObjectSchema>;
 export type CarbotiAttachment = v.InferOutput<typeof CarbotiAttachmentSchema>;
 export type CarbotiMessageEnvelope = v.InferOutput<typeof CarbotiMessageEnvelopeSchema>;
 export type CarbotiArtifact = v.InferOutput<typeof CarbotiArtifactSchema>;

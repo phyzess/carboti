@@ -1,6 +1,8 @@
+import { carbotiRawEmailObjectKey } from "@carboti/core";
+import { hashSourceContent } from "@carboti/files";
 import { intakeInboundEmailAttachments } from "./inbound-email-attachments";
 import { inboundEmailStatus, writeInboundEmailReceipt } from "./inbound-email-store";
-import { parseMimeAttachments } from "./mime-parser";
+import { parseMimeAttachments, parseMimeTextBody } from "./mime-parser";
 
 export async function handleInboundEmail(
   message: ForwardableEmailMessage,
@@ -8,13 +10,19 @@ export async function handleInboundEmail(
 ): Promise<void> {
   const receivedAt = new Date().toISOString();
   const inboundEmailId = crypto.randomUUID();
-  const rawObjectKey = `raw-emails/${receivedAt.slice(0, 10)}/${inboundEmailId}.eml`;
+  const rawObjectKey = carbotiRawEmailObjectKey({
+    messageId: inboundEmailId,
+    receivedAt,
+  });
   const rawBytes = await new Response(message.raw).arrayBuffer();
+  const rawContentHash = await hashSourceContent(rawBytes);
   const rawText = new TextDecoder().decode(rawBytes);
   const subject = message.headers.get("subject") ?? undefined;
+  const textBody = parseMimeTextBody(rawText);
 
   await env.SOURCE_FILES.put(rawObjectKey, rawBytes, {
     customMetadata: {
+      contentHash: rawContentHash,
       from: message.from,
       inboundEmailId,
       to: message.to,
@@ -29,6 +37,7 @@ export async function handleInboundEmail(
     attachments,
     inboundEmailId,
     rawObjectKey,
+    receivedAt,
   });
   const status = inboundEmailStatus(attachmentResults);
 
@@ -37,11 +46,13 @@ export async function handleInboundEmail(
     attachmentResults,
     from: message.from,
     inboundEmailId,
+    rawContentHash,
     rawObjectKey,
     rawSize: message.rawSize,
     receivedAt,
     status,
     subject,
+    textBody,
     to: message.to,
   });
 }

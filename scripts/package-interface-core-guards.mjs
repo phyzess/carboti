@@ -31,7 +31,12 @@ export function assertCoreInterfaces({ assert, core, db }) {
   assert(parsed.id === "msg-1", "core must validate a minimal message envelope.");
 
   assert(
-    db.carbotiArtifacts && db.carbotiLineageEdges && db.carbotiProcessorRuns,
-    "db facade must export Carboti artifact, lineage, and processor run tables.",
+    core.CarbotiStoredObjectSchema && core.carbotiObjectKinds.includes("normalized_message"),
+    "core must expose stored object schema and normalized message object kind.",
+  );
+
+  assert(
+    db.carbotiArtifacts && db.carbotiLineageEdges && db.carbotiObjects && db.carbotiProcessorRuns,
+    "db facade must export Carboti object, artifact, lineage, and processor run tables.",
   );
 }

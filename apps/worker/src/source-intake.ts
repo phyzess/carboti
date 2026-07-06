@@ -41,6 +41,7 @@ export async function createSourceFileImportJob(
 
   if (duplicate) {
     return {
+      contentHash: duplicate.content_hash,
       duplicate: true,
       importJobId: duplicate.import_job_id,
       objectKey: duplicate.object_key,
@@ -76,6 +77,7 @@ export async function createSourceFileImportJob(
   });
 
   const dispatchFailure = await dispatchSourceImportJob(env, {
+    contentHash,
     jobId,
     message: {
       jobId,
@@ -92,6 +94,7 @@ export async function createSourceFileImportJob(
   }
 
   return {
+    contentHash,
     duplicate: false,
     importJobId: jobId,
     objectKey,

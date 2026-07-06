@@ -70,6 +70,28 @@ export const carbotiProcessorRuns = sqliteTable(
   ],
 );
 
+export const carbotiObjects = sqliteTable(
+  "carboti_objects",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    kind: text("kind").notNull(),
+    sourceId: text("source_id"),
+    messageId: text("message_id"),
+    objectKey: text("object_key"),
+    contentType: text("content_type"),
+    contentHash: text("content_hash"),
+    size: integer("size"),
+    dataJson: text("data_json"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("carboti_objects_workspace_kind_idx").on(table.workspaceId, table.kind, table.createdAt),
+    index("carboti_objects_message_kind_idx").on(table.messageId, table.kind, table.createdAt),
+    index("carboti_objects_object_key_idx").on(table.objectKey),
+  ],
+);
+
 export const carbotiArtifacts = sqliteTable(
   "carboti_artifacts",
   {

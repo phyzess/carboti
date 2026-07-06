@@ -84,6 +84,7 @@ carboti_sources
 carboti_pipelines
 carboti_processor_configs
 carboti_processor_runs
+carboti_objects
 carboti_artifacts
 carboti_lineage_edges
 carboti_webhook_endpoints

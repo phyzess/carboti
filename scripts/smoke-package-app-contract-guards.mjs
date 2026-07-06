@@ -28,9 +28,14 @@ export function assertPackageAppContractGuards(context) {
       workerSourceIntakeStore.includes("import_job.queued") &&
       workerInboundEmail.includes("handleInboundEmail") &&
       workerInboundEmail.includes("raw-emails/") &&
+      workerInboundEmail.includes("prepareCarbotiInboundEmailStatements") &&
+      workerInboundEmail.includes("carboti_lineage_edges") &&
       workerInboundEmail.includes("parseMimeAttachments") &&
+      workerInboundEmail.includes("parseMimeTextBody") &&
       workerInboundEmail.includes("system:inbound-email") &&
+      workerInboundEmail.includes("buildRawAttachmentObjectKey") &&
       workerMimeParser.includes("export function parseMimeAttachments") &&
+      workerMimeParser.includes("export function parseMimeTextBody") &&
       workerMimeSources.includes("decodeHeaderValue") &&
       workerMimeSources.includes("decodeTransferEncodedBody") &&
       workerSources.includes("async email(message, env)"),
