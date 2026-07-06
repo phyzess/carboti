@@ -28,6 +28,7 @@ export async function createPackageInterfaceRuntime({ root }) {
       i18n: await server.ssrLoadModule("/packages/i18n/src/index.ts"),
       importPipeline: await server.ssrLoadModule("/packages/import-pipeline/src/index.ts"),
       rbac: await server.ssrLoadModule("/packages/rbac/src/index.ts"),
+      sdk: await server.ssrLoadModule("/packages/sdk/src/index.ts"),
       templateFeature: await server.ssrLoadModule("/templates/feature/src/registry.ts"),
       webApi: await server.ssrLoadModule("/apps/web/src/api.ts"),
     };

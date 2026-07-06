@@ -7,6 +7,7 @@ import { assertExampleFeatureInterfaces } from "./package-interface-example-guar
 import { assertI18nAndRbacInterfaces } from "./package-interface-i18n-rbac-guards.mjs";
 import { assertImportPipelineInterfaces } from "./package-interface-import-guards.mjs";
 import { createPackageInterfaceRuntime } from "./package-interface-runtime.mjs";
+import { assertSdkInterfaces } from "./package-interface-sdk-guards.mjs";
 import { assertTemplateAndWebApiInterfaces } from "./package-interface-template-web-guards.mjs";
 
 const failures = [];
@@ -25,6 +26,7 @@ try {
   await assertExampleFeatureInterfaces(context);
   assertImportPipelineInterfaces(context);
   assertI18nAndRbacInterfaces(context);
+  await assertSdkInterfaces(context);
   await assertTemplateAndWebApiInterfaces(context);
 } finally {
   await runtime.server.close();

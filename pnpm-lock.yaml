@@ -254,6 +254,12 @@ importers:
 
   packages/rbac: {}
 
+  packages/sdk:
+    dependencies:
+      '@carboti/core':
+        specifier: workspace:*
+        version: link:../core
+
   packages/testing: {}
 
   packages/ui:

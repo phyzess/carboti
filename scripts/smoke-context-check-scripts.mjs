@@ -5,6 +5,7 @@ export function createCheckScriptsContext({ text }) {
     text("scripts/package-interface-auth-db-guards.mjs"),
     text("scripts/package-interface-import-guards.mjs"),
     text("scripts/package-interface-i18n-rbac-guards.mjs"),
+    text("scripts/package-interface-sdk-guards.mjs"),
     text("scripts/package-interface-template-web-guards.mjs"),
   ].join("\n");
   const i18nCheck = [

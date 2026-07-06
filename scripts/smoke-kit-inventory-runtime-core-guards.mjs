@@ -25,6 +25,7 @@ export function assertRuntimeCoreInventoryGuards(context) {
     "scripts/package-interface-auth-db-guards.mjs",
     "scripts/package-interface-import-guards.mjs",
     "scripts/package-interface-i18n-rbac-guards.mjs",
+    "scripts/package-interface-sdk-guards.mjs",
     "scripts/package-interface-template-web-guards.mjs",
     "scripts/i18n-check.mjs",
     "scripts/i18n-check-context.mjs",

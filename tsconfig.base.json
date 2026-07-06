@@ -29,6 +29,7 @@
       "@carboti/import-pipeline": ["./packages/import-pipeline/src/index.ts"],
       "@carboti/jobs": ["./packages/jobs/src/index.ts"],
       "@carboti/rbac": ["./packages/rbac/src/index.ts"],
+      "@carboti/sdk": ["./packages/sdk/src/index.ts"],
       "@carboti/testing": ["./packages/testing/src/index.ts"],
       "@carboti/ui": ["./packages/ui/src/index.ts"],
       "@/components": ["./packages/ui/src"],
