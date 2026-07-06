@@ -179,10 +179,11 @@ The first product slice is:
 ### Phase 3: External Processors
 
 1. Add processor config API.
-2. Sign requests with HMAC.
-3. Record processor runs.
-4. Validate returned artifacts.
-5. Retry and log delivery failures.
+2. Add artifact submission API for pull/push external processors.
+3. Sign outbound processor requests with HMAC.
+4. Record processor runs.
+5. Validate returned artifacts.
+6. Retry and log delivery failures.
 
 ### Phase 4: Developer Surface
 

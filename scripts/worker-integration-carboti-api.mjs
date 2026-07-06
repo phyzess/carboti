@@ -95,6 +95,97 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
     "HTTP ingest records raw-to-normalized and normalized-to-artifact lineage",
   );
 
+  await expectApiError(
+    await client.post(
+      `/api/carboti/messages/${ingest.messageId}/artifacts`,
+      JSON.stringify({
+        data: {
+          total: 42,
+        },
+        kind: "not_a_real_artifact",
+      }),
+      {
+        headers: {
+          ...apiHeaders,
+          "content-type": "application/json",
+        },
+      },
+    ),
+    400,
+    "invalid_request",
+  );
+
+  const submittedResponse = await client.post(
+    `/api/carboti/messages/${ingest.messageId}/artifacts`,
+    JSON.stringify({
+      data: {
+        rows: 1,
+        total: 42,
+      },
+      kind: "processor_output",
+      schemaId: "external.ledger.summary.v1",
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(submittedResponse, 201);
+  const submitted = await submittedResponse.json();
+  assert(submitted.status === "succeeded", "external artifact submission succeeds");
+  assert(
+    submitted.inputObjectId === ingest.normalizedMessageObjectId,
+    "external artifact submission uses the normalized message as processor input",
+  );
+
+  const submittedArtifact = await client.json(`/api/carboti/artifacts/${submitted.artifactId}`, {
+    headers: apiHeaders,
+  });
+  assert(
+    submittedArtifact.artifact.kind === "processor_output",
+    "submitted artifact keeps the requested artifact kind",
+  );
+  assert(
+    submittedArtifact.artifact.processorRunId === submitted.processorRunId,
+    "submitted artifact exposes its processor run id",
+  );
+  assert(
+    submittedArtifact.artifact.data.total === 42,
+    "submitted artifact stores processor output data",
+  );
+
+  const submittedRun = await env.DB.prepare(
+    "SELECT status, processor_id, input_object_id, output_artifact_count FROM carboti_processor_runs WHERE id = ?",
+  )
+    .bind(submitted.processorRunId)
+    .first();
+  assert(submittedRun.status === "succeeded", "submitted artifact records a processor run");
+  assert(
+    submittedRun.input_object_id === ingest.normalizedMessageObjectId,
+    "submitted processor run references normalized input",
+  );
+  assert(
+    submittedRun.output_artifact_count === 1,
+    "submitted processor run records one artifact output",
+  );
+
+  const lineageAfterSubmit = await client.json(
+    `/api/carboti/messages/${ingest.messageId}/lineage`,
+    {
+      headers: apiHeaders,
+    },
+  );
+  assert(
+    lineageAfterSubmit.edges.some(
+      (edge) =>
+        edge.processorRunId === submitted.processorRunId &&
+        edge.toObjectId === submitted.artifactId,
+    ),
+    "submitted artifact lineage links processor run to artifact",
+  );
+
   const replayResponse = await client.post(`/api/carboti/messages/${ingest.messageId}/replay`, "", {
     headers: apiHeaders,
   });
@@ -184,6 +275,7 @@ async function seedApiClient(env) {
         "ingest:write",
         "objects:read",
         "artifacts:read",
+        "artifacts:write",
         "lineage:read",
         "replay:write",
       ]),

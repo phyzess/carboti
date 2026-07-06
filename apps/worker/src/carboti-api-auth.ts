@@ -6,6 +6,7 @@ export type CarbotiApiScope =
   | "ingest:write"
   | "objects:read"
   | "artifacts:read"
+  | "artifacts:write"
   | "lineage:read"
   | "replay:write";
 
