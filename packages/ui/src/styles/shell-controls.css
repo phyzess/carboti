@@ -1,0 +1,224 @@
+.qitu-primary-label {
+  display: none;
+}
+
+.qitu-primary-fallback {
+  font-size: var(--qitu-text-label-12);
+  font-weight: 650;
+}
+
+.qitu-primary-divider {
+  width: 1px;
+  height: 16px;
+  margin-left: var(--qitu-space-o1);
+  background: color-mix(in oklch, var(--qitu-line) 60%, transparent);
+}
+
+.qitu-primary-live-label {
+  width: 5.5rem;
+  min-width: 5.5rem;
+  overflow: hidden;
+  color: color-mix(in oklch, var(--qitu-text) 82%, transparent);
+  font-size: var(--qitu-text-label-12);
+  line-height: 1;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--qitu-motion-fast) var(--qitu-ease-standard);
+}
+
+.qitu-topbar-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--qitu-space-o3);
+  margin-left: auto;
+  position: relative;
+  z-index: var(--qitu-z-shell-front);
+}
+
+.qitu-command {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  align-items: center;
+  border: 0;
+  border-radius: var(--qitu-radius-md);
+  padding: 0;
+  color: var(--qitu-dim);
+  background: var(--qitu-bg);
+  box-shadow: none;
+  font-size: var(--qitu-text-button-12);
+  line-height: var(--qitu-leading-button);
+  text-align: left;
+  transition:
+    background-color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    box-shadow var(--qitu-motion-fast) var(--qitu-ease-standard);
+}
+
+.qitu-command-label,
+.qitu-command-kbd {
+  display: none;
+}
+
+button.qitu-command {
+  cursor: pointer;
+}
+
+.qitu-command:hover,
+.qitu-command:focus-visible {
+  color: var(--qitu-text);
+  background: var(--qitu-control-hover-bg);
+  outline: none;
+  box-shadow: none;
+}
+
+.qitu-subnav {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  justify-content: center;
+  gap: var(--qitu-space-o4);
+  overflow-x: auto;
+  padding-bottom: var(--qitu-space-o0);
+  scrollbar-width: none;
+}
+
+.qitu-subnav-button {
+  display: inline-flex;
+  min-width: max-content;
+  align-items: center;
+  height: 24px;
+  border: 0;
+  border-radius: 0;
+  padding: 0 0 var(--qitu-space-o1);
+  color: color-mix(in oklch, var(--qitu-muted) 72%, transparent);
+  background: transparent;
+  font-size: var(--qitu-text-label-12);
+  line-height: var(--qitu-leading-label-12);
+  text-decoration: none;
+  transition:
+    background-color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    box-shadow var(--qitu-motion-fast) var(--qitu-ease-standard);
+}
+
+.qitu-subnav-button:hover,
+.qitu-subnav-button:focus-visible,
+.qitu-subnav-button[data-active="true"] {
+  color: color-mix(in oklch, var(--qitu-text) 88%, transparent);
+  background: transparent;
+  outline: none;
+}
+
+.qitu-subnav-button[data-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.qitu-subnav-button[data-disabled="true"]:hover,
+.qitu-subnav-button[data-disabled="true"]:focus-visible {
+  color: color-mix(in oklch, var(--qitu-muted) 72%, transparent);
+}
+
+.qitu-subnav-button[data-active="true"] {
+  box-shadow: inset 0 -1px 0 var(--qitu-chroma-active);
+}
+
+.qitu-main {
+  min-width: 0;
+  padding: var(--qitu-layout-gutter);
+}
+
+@media (min-width: 1536px) {
+  .qitu-brand-lockup {
+    width: 148px;
+    flex-basis: 148px;
+  }
+
+  .qitu-brand-copy {
+    display: grid;
+  }
+
+  .qitu-command {
+    grid-template-columns: 1.18em minmax(0, 1fr) auto;
+    gap: var(--qitu-space-o4);
+    align-items: center;
+    justify-items: start;
+    width: clamp(360px, 24vw, 480px);
+    min-width: 320px;
+    max-width: min(480px, 32vw);
+    border-radius: var(--qitu-radius-search);
+    padding-inline: var(--qitu-space-o4);
+    background: var(--qitu-bg);
+    box-shadow: none;
+  }
+
+  .qitu-command-label,
+  .qitu-command-kbd {
+    display: inline-flex;
+  }
+
+  .qitu-command-label {
+    min-width: 0;
+    overflow: hidden;
+    color: color-mix(in oklch, var(--qitu-muted) 86%, transparent);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.qitu-topbar-control {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--qitu-radius-md);
+  padding-inline: 0;
+  background: var(--qitu-bg);
+  color: var(--qitu-muted);
+  box-shadow: none;
+}
+
+.qitu-topbar-control:hover,
+.qitu-topbar-control:focus-visible {
+  background: var(--qitu-control-hover-bg);
+  color: var(--qitu-text);
+}
+
+.qitu-account-trigger {
+  width: auto;
+  min-width: 74px;
+  height: 36px;
+  gap: var(--qitu-space-o3);
+  padding-inline: var(--qitu-space-o4);
+  background: var(--qitu-bg);
+  color: var(--qitu-text);
+  border-radius: var(--qitu-radius-lg);
+  box-shadow: none;
+}
+
+.qitu-account-trigger:hover,
+.qitu-account-trigger:focus-visible {
+  background: var(--qitu-control-hover-bg);
+}
+
+.qitu-avatar-mark {
+  display: grid;
+  place-items: center;
+  border-radius: var(--qitu-radius-md);
+  background: var(--qitu-color-primary);
+  color: var(--qitu-color-primary-foreground);
+  box-shadow: none;
+}
+
+.qitu-icon-chip {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: var(--qitu-radius-md);
+  background: var(--qitu-brand-accent-soft);
+  color: var(--qitu-brand-accent-ink);
+  box-shadow: var(--qitu-shadow-inset);
+}

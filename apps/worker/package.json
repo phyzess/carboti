@@ -1,0 +1,44 @@
+{
+  "name": "@carboti/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../../scripts/wrangler-dev-local.mjs",
+    "cf:typegen": "node ../../scripts/wrangler-types.mjs",
+    "db:migrate:local": "node ../../scripts/wrangler-d1-migrate-local.mjs",
+    "db:migrate:remote": "vp run db:migrate:preview",
+    "db:migrate:preview": "wrangler d1 migrations apply carboti-preview --env preview --remote",
+    "db:migrate:production": "wrangler d1 migrations apply carboti-production --env production --remote",
+    "deploy:dry-run": "node ../../scripts/wrangler-deploy-dry-run.mjs --env=\"\" --outdir ../../.tmp/worker-dry-run",
+    "deploy:preview:dry-run": "node ../../scripts/wrangler-deploy-dry-run.mjs --env preview --outdir ../../.tmp/worker-preview-dry-run",
+    "deploy:production:dry-run": "node ../../scripts/wrangler-deploy-dry-run.mjs --env production --outdir ../../.tmp/worker-production-dry-run",
+    "deploy:preview": "node ../../scripts/wrangler-deploy.mjs --env preview",
+    "deploy:production": "node ../../scripts/wrangler-deploy.mjs --env production",
+    "build": "vp run typecheck",
+    "test:runtime": "vitest run --config vitest.config.ts",
+    "typecheck": "vp run cf:typegen && tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@carboti/ai-advisory": "workspace:*",
+    "@carboti/audit": "workspace:*",
+    "@carboti/auth": "workspace:*",
+    "@carboti/config": "workspace:*",
+    "@carboti/core": "workspace:*",
+    "@carboti/email": "workspace:*",
+    "@carboti/files": "workspace:*",
+    "@carboti/i18n": "workspace:*",
+    "@carboti/import-pipeline": "workspace:*",
+    "@carboti/jobs": "workspace:*",
+    "@carboti/rbac": "workspace:*",
+    "hono": "4.12.26",
+    "valibot": "1.4.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.16.18",
+    "@types/node": "26.0.0",
+    "@vitest/runner": "4.1.9",
+    "@vitest/snapshot": "4.1.9",
+    "vitest": "4.1.9"
+  }
+}

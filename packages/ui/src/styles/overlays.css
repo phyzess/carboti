@@ -1,0 +1,101 @@
+.qitu-overlay-backdrop {
+  z-index: var(--qitu-z-overlay-backdrop);
+  background: var(--qitu-overlay-backdrop);
+  backdrop-filter: blur(8px) saturate(1.05);
+}
+
+.qitu-dismiss-layer {
+  z-index: var(--qitu-z-overlay-backdrop);
+}
+
+.qitu-surface.qitu-overlay-surface {
+  z-index: var(--qitu-z-overlay);
+  border: 1px solid color-mix(in oklch, var(--qitu-line) 58%, transparent);
+  background: var(--qitu-color-popover);
+  box-shadow: var(--qitu-shadow-overlay);
+}
+
+.qitu-transparent-backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.qitu-overlay-positioner {
+  z-index: var(--qitu-z-overlay);
+}
+
+.qitu-dialog-content,
+.qitu-drawer-content,
+.qitu-menu-content,
+.qitu-popover-content,
+.qitu-select-popup {
+  color: var(--qitu-text);
+}
+
+.qitu-drawer-viewport {
+  position: fixed;
+  inset: 0;
+  z-index: var(--qitu-z-overlay);
+  pointer-events: none;
+}
+
+.qitu-drawer-content {
+  position: fixed;
+  inset-block: var(--qitu-space-o3);
+  inset-inline-end: var(--qitu-space-o3);
+  width: min(30rem, calc(100vw - (var(--qitu-space-o3) * 2)));
+  max-width: calc(100vw - (var(--qitu-space-o3) * 2));
+  overflow: auto;
+  pointer-events: auto;
+  padding: var(--qitu-space-s1);
+}
+
+.qitu-batch-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qitu-space-s0);
+  border: 1px solid color-mix(in oklch, var(--qitu-line) 58%, transparent);
+  border-radius: var(--qitu-radius-md);
+  background: var(--qitu-surface-row);
+  padding: var(--qitu-space-s0);
+}
+
+.qitu-batch-action-summary {
+  color: var(--qitu-muted);
+  font-size: var(--qitu-text-label-12);
+  font-weight: 600;
+  line-height: var(--qitu-leading-label-12);
+}
+
+.qitu-popover-content {
+  min-width: min(18rem, calc(100vw - 2rem));
+  max-width: min(28rem, calc(100vw - 2rem));
+  max-height: min(26rem, var(--available-height));
+  overflow: auto;
+  padding: var(--qitu-space-o3);
+}
+
+.qitu-confirm-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: min(26rem, calc(100vw - 2rem));
+  padding: var(--qitu-space-s1);
+  transform: translate(-50%, -50%);
+}
+
+.qitu-confirm-dialog-title {
+  color: var(--qitu-text);
+  font-size: var(--qitu-text-heading-20);
+  font-weight: 600;
+  line-height: var(--qitu-leading-heading-20);
+}
+
+.qitu-confirm-dialog-description {
+  margin-top: var(--qitu-space-o2);
+  color: var(--qitu-muted);
+  font-size: var(--qitu-text-copy-13);
+  line-height: var(--qitu-leading-copy-13);
+}

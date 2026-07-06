@@ -1,0 +1,102 @@
+.qitu-filter-bar {
+  display: grid;
+  gap: var(--qitu-space-o3);
+}
+
+.qitu-filter-bar-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: var(--qitu-space-o3);
+}
+
+.qitu-filter-bar-actions {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qitu-space-o2);
+}
+
+.qitu-data-toolbar {
+  display: flex;
+  min-height: 36px;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qitu-space-o3);
+}
+
+.qitu-data-toolbar-main,
+.qitu-data-toolbar-meta,
+.qitu-data-toolbar-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--qitu-space-o2);
+}
+
+.qitu-data-toolbar-meta {
+  color: var(--qitu-muted);
+  font-size: var(--qitu-text-label-12);
+  line-height: var(--qitu-leading-label-12);
+}
+
+.qitu-detail-drawer-header {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--qitu-space-o3);
+}
+
+.qitu-detail-drawer-heading {
+  min-width: 0;
+}
+
+.qitu-detail-drawer-title {
+  overflow: hidden;
+  font-size: var(--qitu-text-heading-20);
+  font-weight: 600;
+  line-height: var(--qitu-leading-heading-20);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qitu-detail-drawer-description {
+  margin-top: var(--qitu-space-o1);
+  color: var(--qitu-muted);
+  font-size: var(--qitu-text-copy-13);
+  line-height: var(--qitu-leading-copy-13);
+}
+
+.qitu-command-search-fixture {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--qitu-space-o2);
+  color: inherit;
+  font-size: var(--qitu-text-label-12);
+  line-height: var(--qitu-leading-label-12);
+}
+
+.qitu-command-search-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qitu-command-search-shortcut {
+  display: inline-grid;
+  height: 20px;
+  min-width: 20px;
+  place-items: center;
+  border-radius: var(--qitu-radius-control);
+  padding-inline: var(--qitu-space-o2);
+  background: var(--qitu-surface-row);
+  color: var(--qitu-dim);
+  font-family: var(--qitu-font-mono);
+  font-size: 10px;
+  line-height: 1;
+}

@@ -1,0 +1,13 @@
+.DS_Store
+node_modules/
+dist/
+build/
+.wrangler/
+.tmp/
+.dev.vars
+.env
+.env.*
+!.env.example
+coverage/
+*.log
+tsconfig.tsbuildinfo

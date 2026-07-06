@@ -1,0 +1,73 @@
+.qitu-table-cell {
+  background: var(--qitu-surface-row);
+  box-shadow: none;
+}
+
+.qitu-table-scroll-area {
+  max-height: var(--qitu-table-scroll-max-height);
+  min-width: 0;
+  overflow: auto;
+  padding-inline: var(--qitu-space-s1);
+  padding-bottom: var(--qitu-space-s1);
+  scrollbar-gutter: stable;
+}
+
+.qitu-table-scroll-area[data-variant="compact"] {
+  max-height: var(--qitu-table-scroll-compact-max-height);
+}
+
+.qitu-table-scroll-area[data-variant="free"] {
+  max-height: none;
+}
+
+.qitu-table-scroll-area [data-slot="table-container"] {
+  min-width: 100%;
+}
+
+.qitu-surface,
+.qitu-card {
+  border: 1px solid transparent;
+  border-radius: var(--qitu-radius-card);
+  background: var(--qitu-surface-panel);
+  box-shadow: var(--qitu-surface-panel-highlight);
+  backdrop-filter: blur(22px) saturate(1.16);
+}
+
+.qitu-surface-subtle {
+  border: 1px solid transparent;
+  border-radius: var(--qitu-radius-md);
+  background: var(--qitu-surface-row);
+  box-shadow: none;
+  backdrop-filter: blur(18px) saturate(1.12);
+}
+
+.qitu-number {
+  font-family: var(--qitu-font-number);
+  font-variant-numeric: tabular-nums;
+}
+
+.qitu-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--qitu-surface-row-hover);
+}
+
+.qitu-skeleton::after {
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--qitu-text) 8%, transparent),
+    transparent
+  );
+  animation: qitu-shimmer 1.6s infinite;
+  content: "";
+}
+
+@keyframes qitu-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

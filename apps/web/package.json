@@ -1,0 +1,32 @@
+{
+  "name": "@carboti/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "dev:demo": "VITE_QITU_API_MODE=mock vp dev --host 0.0.0.0",
+    "build": "vp build",
+    "build:demo": "VITE_QITU_API_MODE=mock vp build",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@carboti/auth": "workspace:*",
+    "@carboti/charts": "workspace:*",
+    "@carboti/design-system": "workspace:*",
+    "@carboti/i18n": "workspace:*",
+    "@carboti/rbac": "workspace:*",
+    "@carboti/ui": "workspace:*",
+    "@tanstack/react-router": "1.170.16",
+    "lucide-react": "1.21.0",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "tailwindcss": "4.3.1",
+    "vite": "8.0.16"
+  }
+}

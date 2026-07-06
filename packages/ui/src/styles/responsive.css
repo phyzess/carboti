@@ -1,0 +1,92 @@
+@media (max-width: 1180px) {
+  .qitu-topbar {
+    padding: var(--qitu-space-o4);
+  }
+
+  .qitu-topbar-main {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: var(--qitu-space-o3);
+    min-height: auto;
+    column-gap: var(--qitu-space-o4);
+  }
+
+  .qitu-brand-lockup {
+    width: auto;
+    height: 36px;
+    flex: 1 1 auto;
+    padding-inline: 0;
+  }
+
+  .qitu-brand-mark {
+    width: 36px;
+    height: 36px;
+  }
+
+  .qitu-mark {
+    width: 30px;
+    height: 30px;
+  }
+
+  .qitu-brand-copy {
+    display: grid;
+  }
+
+  .qitu-navigation-stack {
+    position: static;
+    transform: none;
+    order: 3;
+    width: 100%;
+    flex-basis: 100%;
+    align-items: flex-start;
+  }
+
+  .qitu-primary-nav {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .qitu-primary-nav-track {
+    justify-content: flex-start;
+  }
+
+  .qitu-topbar-actions {
+    margin-left: auto;
+  }
+
+  .qitu-subnav {
+    justify-content: flex-start;
+  }
+
+  .qitu-main {
+    padding: var(--qitu-space-o4);
+  }
+}
+
+@media (max-width: 640px) {
+  .qitu-primary-button {
+    width: 32px;
+    min-width: 32px;
+    padding-inline: 0;
+  }
+
+  .qitu-primary-label {
+    display: none;
+  }
+
+  .qitu-primary-nav-track {
+    gap: var(--qitu-space-o1);
+  }
+
+  .qitu-readonly-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--qitu-space-o0);
+    align-items: start;
+    padding-block: var(--qitu-space-o3);
+  }
+
+  .qitu-readonly-value {
+    justify-self: start;
+    text-align: left;
+  }
+}

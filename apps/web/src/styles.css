@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@import "@carboti/design-system/tokens.css";
+@import "@carboti/ui/styles.css";
+@import "./styles/auth-page.css";
+
+@source "../../../packages/ui/src";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+::selection {
+  background: var(--qitu-brand-accent-soft);
+}

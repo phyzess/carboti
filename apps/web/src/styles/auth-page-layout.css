@@ -1,0 +1,163 @@
+.qitu-auth-page {
+  min-height: 100dvh;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--qitu-surface-row-active) 38%, transparent),
+      transparent 42%
+    ),
+    linear-gradient(180deg, var(--qitu-bg) 0%, var(--qitu-bg) 100%);
+  color: var(--qitu-text);
+}
+
+.qitu-auth-page::before {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(color-mix(in oklch, var(--qitu-text) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--qitu-text) 4%, transparent) 1px,
+      transparent 1px
+    );
+  background-position: center;
+  background-size: 42px 42px;
+  mask-image: linear-gradient(180deg, black, transparent 78%);
+  opacity: 0.38;
+  content: "";
+}
+
+.qitu-auth-header {
+  position: relative;
+  z-index: var(--qitu-z-shell-front);
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qitu-space-o5);
+  padding: var(--qitu-space-o5) clamp(18px, 4vw, 54px);
+}
+
+.qitu-auth-brand,
+.qitu-auth-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qitu-space-o3);
+  position: relative;
+  z-index: var(--qitu-z-overlay);
+}
+
+.qitu-auth-mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border-radius: var(--qitu-radius-md);
+  color: var(--qitu-brand-mark-glyph);
+  background: var(--qitu-surface-row);
+}
+
+.qitu-auth-mark .qitu-mark {
+  width: 32px;
+  height: 32px;
+}
+
+.qitu-auth-wordmark {
+  color: var(--qitu-text);
+  font-size: var(--qitu-text-label-14);
+  font-weight: 650;
+  line-height: var(--qitu-leading-label-14);
+}
+
+.qitu-auth-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(1120px, calc(100vw - 36px));
+  min-height: calc(100dvh - 104px);
+  margin: 0 auto;
+  grid-template-columns: minmax(0, 0.92fr) minmax(360px, 0.78fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 76px);
+  padding: 0 0 clamp(28px, 7vh, 72px);
+}
+
+.qitu-auth-intro {
+  max-width: 34rem;
+}
+
+.qitu-auth-intro h1 {
+  margin: var(--qitu-space-o5) 0 0;
+  max-width: 12ch;
+  color: var(--qitu-text);
+  font-size: 5rem;
+  font-weight: 680;
+  letter-spacing: 0;
+  line-height: 0.94;
+  text-wrap: balance;
+}
+
+.qitu-auth-intro p {
+  margin: var(--qitu-space-o5) 0 0;
+  max-width: 36rem;
+  color: var(--qitu-muted);
+  font-size: var(--qitu-text-copy-14);
+  line-height: var(--qitu-leading-copy-14);
+  text-wrap: pretty;
+}
+
+.qitu-auth-proof-list {
+  display: grid;
+  margin-top: var(--qitu-space-o6);
+  gap: var(--qitu-space-o3);
+}
+
+.qitu-auth-proof,
+.qitu-auth-status-line {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  gap: var(--qitu-space-o3);
+  color: var(--qitu-text);
+  font-size: var(--qitu-text-label-13);
+  line-height: var(--qitu-leading-label-13);
+}
+
+.qitu-auth-proof {
+  width: fit-content;
+  border-radius: var(--qitu-radius-md);
+  padding: var(--qitu-space-o2) var(--qitu-space-o4);
+  background: color-mix(in oklch, var(--qitu-surface-row) 76%, transparent);
+}
+
+.qitu-auth-proof .qitu-animated-icon {
+  color: var(--qitu-brand-accent-ink);
+}
+
+.qitu-auth-status-line {
+  margin-top: var(--qitu-space-o6);
+  color: var(--qitu-muted);
+}
+
+.qitu-auth-status-line span {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: var(--qitu-radius-pill);
+  background: var(--qitu-chroma-lime-ink);
+}
+
+.qitu-auth-status-line strong {
+  color: var(--qitu-text);
+  font-weight: 550;
+}
+
+.qitu-auth-status-line em {
+  overflow: hidden;
+  max-width: 18rem;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

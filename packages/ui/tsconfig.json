@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@/components": ["./src"],
+      "@/components/*": ["./src/*"],
+      "@/components/ui": ["./src"],
+      "@/components/ui/*": ["./src/*"],
+      "@/hooks": ["./src/hooks"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/lib": ["./src"],
+      "@/lib/*": ["./src/*"],
+      "@/lib/utils": ["./src/utils.ts"]
+    }
+  },
+  "include": ["src"]
+}

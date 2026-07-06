@@ -1,0 +1,197 @@
+.qitu-workbench {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 100dvh;
+  background: var(--qitu-app-bg-gradient), var(--qitu-bg);
+  color: var(--qitu-text);
+}
+
+.qitu-topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--qitu-z-shell);
+  display: flex;
+  flex-direction: column;
+  padding: var(--qitu-space-o4) var(--qitu-space-o5) var(--qitu-space-o4) 0;
+  background: var(--qitu-topbar-bg);
+  box-shadow: none;
+  backdrop-filter: blur(18px) saturate(1.18);
+}
+
+.qitu-topbar-main {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: var(--qitu-space-o4);
+  min-height: 68px;
+}
+
+.qitu-brand-lockup {
+  display: flex;
+  width: 76px;
+  height: 44px;
+  flex: 0 0 76px;
+  min-width: 0;
+  align-items: center;
+  gap: var(--qitu-space-o4);
+  padding-inline: var(--qitu-space-o4) 0;
+  transition:
+    width var(--qitu-motion-panel) var(--qitu-ease-enter),
+    flex-basis var(--qitu-motion-panel) var(--qitu-ease-enter);
+}
+
+.qitu-brand-mark {
+  position: relative;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  border-radius: var(--qitu-radius-control);
+  background: var(--qitu-brand-mark-bg);
+  color: var(--qitu-brand-mark-glyph);
+  box-shadow: none;
+}
+
+.qitu-mark {
+  display: block;
+  width: 36px;
+  height: 36px;
+  overflow: visible;
+  shape-rendering: geometricprecision;
+}
+
+.qitu-mark-form {
+  fill: currentColor;
+}
+
+.qitu-mark-accent {
+  fill: var(--qitu-brand-mark-accent);
+}
+
+.qitu-brand-copy {
+  display: none;
+  min-width: 0;
+  max-width: 68px;
+}
+
+.qitu-brand-name {
+  display: block;
+  max-width: 68px;
+  overflow: hidden;
+  color: var(--qitu-text);
+  font-size: var(--qitu-text-button-12);
+  font-weight: 500;
+  line-height: var(--qitu-leading-button);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qitu-brand-context {
+  display: none !important;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--qitu-dim);
+  font-size: var(--qitu-text-label-12);
+  line-height: var(--qitu-leading-label-12);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qitu-navigation-stack {
+  position: absolute;
+  top: 0;
+  left: calc(50% + var(--qitu-space-o5) / 2);
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--qitu-space-o1);
+  justify-content: flex-start;
+  transform: translateX(-50%);
+}
+
+.qitu-primary-nav {
+  min-width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.qitu-primary-nav::-webkit-scrollbar,
+.qitu-subnav::-webkit-scrollbar {
+  display: none;
+}
+
+.qitu-primary-nav-track {
+  display: flex;
+  min-width: max-content;
+  height: 40px;
+  align-items: center;
+  gap: var(--qitu-space-o2);
+  padding-inline: var(--qitu-space-o1);
+}
+
+.qitu-primary-button {
+  position: relative;
+  display: grid;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--qitu-radius-md);
+  padding: 0;
+  color: var(--qitu-muted);
+  background: transparent;
+  font-size: var(--qitu-text-label-13);
+  line-height: var(--qitu-leading-label-13);
+  text-decoration: none;
+  transition:
+    background-color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    box-shadow var(--qitu-motion-fast) var(--qitu-ease-standard),
+    color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    transform var(--qitu-motion-page) var(--qitu-ease-route);
+}
+
+.qitu-primary-button:hover,
+.qitu-primary-button:focus-visible,
+.qitu-primary-button[data-active="true"] {
+  color: var(--qitu-text);
+  background: transparent;
+  outline: none;
+}
+
+.qitu-primary-button:hover,
+.qitu-primary-button:focus-visible {
+  background: var(--qitu-control-hover-bg);
+}
+
+.qitu-primary-button::after {
+  position: absolute;
+  right: calc(50% - 4px);
+  bottom: 0;
+  left: calc(50% - 4px);
+  height: 1px;
+  border-radius: 999px;
+  background: var(--qitu-chroma-active);
+  opacity: 0;
+  content: "";
+  transform: scaleX(0.42);
+  transition:
+    opacity var(--qitu-motion-fast) var(--qitu-ease-standard),
+    transform var(--qitu-motion-fast) var(--qitu-ease-standard);
+}
+
+.qitu-primary-button[data-active="true"]::after {
+  right: calc(50% - 7px);
+  left: calc(50% - 7px);
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.qitu-button-press:active {
+  transform: scale(0.98);
+}

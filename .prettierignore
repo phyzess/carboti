@@ -1,0 +1,4 @@
+node_modules/
+apps/web/dist/
+apps/worker/worker-configuration.d.ts
+worker-configuration.d.ts

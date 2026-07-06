@@ -1,0 +1,159 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "carboti-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "vars": {
+    "APP_ENV": "local",
+    "EMAIL_DELIVERY_MODE": "store",
+    "PUBLIC_APP_NAME": "carboti",
+    "PUBLIC_APP_URL": "http://localhost:5173",
+    "MAIL_FROM": "noreply@example.com",
+    "MAIL_REPLY_TO": "",
+  },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "remote": false,
+    },
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "carboti-dev",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+    },
+  ],
+  "r2_buckets": [
+    {
+      "binding": "SOURCE_FILES",
+      "bucket_name": "carboti-source-files-dev",
+    },
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "IMPORT_JOBS",
+        "queue": "carboti-import-jobs-dev",
+      },
+    ],
+    "consumers": [
+      {
+        "queue": "carboti-import-jobs-dev",
+        "max_batch_size": 10,
+        "max_batch_timeout": 30,
+        "max_retries": 3,
+        "dead_letter_queue": "carboti-import-jobs-dev-dlq",
+      },
+    ],
+  },
+  "env": {
+    "preview": {
+      "name": "carboti-worker-preview",
+      "vars": {
+        "APP_ENV": "preview",
+        "EMAIL_DELIVERY_MODE": "send",
+        "PUBLIC_APP_NAME": "carboti",
+        "PUBLIC_APP_URL": "https://preview.example.com",
+        "MAIL_FROM": "noreply@example.com",
+        "MAIL_REPLY_TO": "",
+      },
+      "assets": {
+        "directory": "../web/dist",
+        "not_found_handling": "single-page-application",
+        "run_worker_first": ["/api/*", "/health"],
+      },
+      "send_email": [
+        {
+          "name": "EMAIL",
+        },
+      ],
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "carboti-preview",
+          "database_id": "REPLACE_WITH_PREVIEW_D1_DATABASE_ID",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "SOURCE_FILES",
+          "bucket_name": "carboti-source-files-preview",
+        },
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "IMPORT_JOBS",
+            "queue": "carboti-import-jobs-preview",
+          },
+        ],
+        "consumers": [
+          {
+            "queue": "carboti-import-jobs-preview",
+            "max_batch_size": 10,
+            "max_batch_timeout": 30,
+            "max_retries": 3,
+            "dead_letter_queue": "carboti-import-jobs-preview-dlq",
+          },
+        ],
+      },
+    },
+    "production": {
+      "name": "carboti-worker-production",
+      "vars": {
+        "APP_ENV": "production",
+        "EMAIL_DELIVERY_MODE": "send",
+        "PUBLIC_APP_NAME": "carboti",
+        "PUBLIC_APP_URL": "https://app.example.com",
+        "MAIL_FROM": "noreply@example.com",
+        "MAIL_REPLY_TO": "",
+      },
+      "assets": {
+        "directory": "../web/dist",
+        "not_found_handling": "single-page-application",
+        "run_worker_first": ["/api/*", "/health"],
+      },
+      "send_email": [
+        {
+          "name": "EMAIL",
+        },
+      ],
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "carboti-production",
+          "database_id": "REPLACE_WITH_PRODUCTION_D1_DATABASE_ID",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "SOURCE_FILES",
+          "bucket_name": "carboti-source-files-production",
+        },
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "IMPORT_JOBS",
+            "queue": "carboti-import-jobs-production",
+          },
+        ],
+        "consumers": [
+          {
+            "queue": "carboti-import-jobs-production",
+            "max_batch_size": 10,
+            "max_batch_timeout": 30,
+            "max_retries": 3,
+            "dead_letter_queue": "carboti-import-jobs-production-dlq",
+          },
+        ],
+      },
+    },
+  },
+}

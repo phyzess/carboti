@@ -1,0 +1,156 @@
+.qitu-segment-tab {
+  height: 2rem;
+  border: 1px solid transparent;
+  border-radius: var(--qitu-radius-sm);
+  color: var(--qitu-muted);
+  background: transparent;
+  font-size: var(--qitu-text-label-13);
+  line-height: var(--qitu-leading-label-13);
+  transition:
+    background-color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    border-color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    box-shadow var(--qitu-motion-fast) var(--qitu-ease-standard),
+    color var(--qitu-motion-fast) var(--qitu-ease-standard);
+}
+
+.qitu-segment-tab > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qitu-segment-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--qitu-space-o2);
+  min-width: 0;
+  padding-inline: var(--qitu-space-o3);
+}
+
+.qitu-segment-track {
+  border: 1px solid transparent;
+  border-radius: var(--qitu-radius-lg);
+  background: var(--qitu-surface-row);
+  padding: var(--qitu-space-o1);
+}
+
+.qitu-segment-tab:hover,
+.qitu-segment-tab:focus-visible {
+  color: var(--qitu-text);
+  background: var(--qitu-control-hover-bg);
+  outline: none;
+}
+
+.qitu-segment-tab-active {
+  border-color: transparent;
+  color: var(--qitu-text);
+  background: var(--qitu-surface-row-active);
+  box-shadow: var(--qitu-shadow-active-ring);
+}
+
+.qitu-form-field {
+  display: block;
+  min-width: 0;
+}
+
+.qitu-form-label {
+  display: block;
+  margin-bottom: var(--qitu-space-o2);
+  color: var(--qitu-text);
+  font-size: var(--qitu-text-button-12);
+  font-weight: 500;
+  line-height: var(--qitu-leading-button);
+}
+
+.qitu-command-kbd,
+.qitu-kbd {
+  height: 20px;
+  min-width: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--qitu-radius-control);
+  padding: 0 var(--qitu-space-o2);
+  background: var(--qitu-surface-row-active);
+  color: var(--qitu-muted);
+  font-family: var(--qitu-font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.qitu-kbd {
+  display: inline-flex;
+}
+
+.qitu-readonly-field {
+  display: grid;
+  min-height: 36px;
+  min-width: 0;
+  grid-template-columns: minmax(6.5rem, 0.42fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--qitu-space-o3);
+  border: 1px solid transparent;
+  border-radius: var(--qitu-radius-control);
+  padding: var(--qitu-space-o2) var(--qitu-space-o4);
+  background: var(--qitu-surface-row);
+  box-shadow: none;
+}
+
+.qitu-readonly-label {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--qitu-muted);
+  font-size: var(--qitu-text-button-12);
+  line-height: var(--qitu-leading-button);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qitu-readonly-value {
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
+  overflow: hidden;
+  color: var(--qitu-text);
+  font-family: var(--qitu-font-number);
+  font-size: var(--qitu-text-button-12);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--qitu-leading-button);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qitu-panel-action {
+  display: flex;
+  align-items: center;
+  gap: var(--qitu-space-o3);
+  border: 0;
+  border-radius: var(--qitu-radius-md);
+  padding: var(--qitu-space-o3);
+  color: var(--qitu-text);
+  background: transparent;
+  transition:
+    background-color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    box-shadow var(--qitu-motion-fast) var(--qitu-ease-standard),
+    color var(--qitu-motion-fast) var(--qitu-ease-standard);
+}
+
+.qitu-panel-action:hover,
+.qitu-panel-action:focus-visible,
+.qitu-panel-action[data-highlighted],
+.qitu-panel-action[data-active="true"] {
+  background: var(--qitu-surface-row-hover);
+  outline: none;
+}
+
+.qitu-panel-action[data-checked],
+.qitu-panel-action[data-selected],
+.qitu-panel-action[data-active="true"],
+.qitu-row-card-active {
+  border-color: transparent;
+  background: var(--qitu-surface-row-active);
+  box-shadow: var(--qitu-shadow-active-ring);
+}

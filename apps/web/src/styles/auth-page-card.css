@@ -1,0 +1,50 @@
+.qitu-auth-content {
+  display: grid;
+  gap: var(--qitu-space-o4);
+}
+
+.qitu-auth-card {
+  border-radius: var(--qitu-radius-card);
+  background: color-mix(in oklch, var(--qitu-surface-panel) 88%, var(--qitu-bg));
+  backdrop-filter: blur(24px) saturate(1.12);
+}
+
+.qitu-auth-card {
+  min-height: 430px;
+  padding: clamp(22px, 3vw, 34px);
+  box-shadow: 0 28px 84px color-mix(in oklch, var(--qitu-text) 8%, transparent);
+}
+
+.qitu-auth-card-title {
+  margin: var(--qitu-space-o4) 0 0;
+  color: var(--qitu-text);
+  font-size: var(--qitu-text-heading-24);
+  font-weight: 640;
+  letter-spacing: 0;
+  line-height: var(--qitu-leading-heading-24);
+}
+
+.qitu-auth-card-copy {
+  margin: var(--qitu-space-o2) 0 0;
+  max-width: 31rem;
+  color: var(--qitu-muted);
+  font-size: var(--qitu-text-copy-14);
+  line-height: var(--qitu-leading-copy-14);
+  text-wrap: pretty;
+}
+
+.qitu-auth-skeleton-stack {
+  display: grid;
+  margin-top: var(--qitu-space-o6);
+  gap: var(--qitu-space-o4);
+}
+
+.qitu-auth-skeleton-stack span {
+  height: 34px;
+  border-radius: var(--qitu-radius-control);
+  background: var(--qitu-surface-row);
+}
+
+.qitu-auth-skeleton-stack span:last-child {
+  width: 64%;
+}

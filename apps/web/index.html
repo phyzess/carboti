@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/qitu-mark.svg" type="image/svg+xml" />
+    <title>qitu</title>
+    <script>
+      (() => {
+        const storageKey = "qitu.theme";
+        const root = document.documentElement;
+        let preference = "system";
+
+        try {
+          const stored = window.localStorage.getItem(storageKey);
+          if (stored === "light" || stored === "dark" || stored === "system") {
+            preference = stored;
+          }
+        } catch {
+          preference = "system";
+        }
+
+        const resolved =
+          preference === "system"
+            ? window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : preference;
+
+        root.dataset.theme = resolved;
+        root.classList.toggle("dark", resolved === "dark");
+      })();
+    </script>
+    <style>
+      :root {
+        color-scheme: light;
+        --qitu-preboot-bg: oklch(0.976 0.004 250);
+        --qitu-preboot-text: oklch(0.18 0.012 250);
+        --qitu-preboot-muted: oklch(0.42 0.012 250);
+        --qitu-preboot-panel: oklch(0.992 0.002 250);
+        --qitu-preboot-row: oklch(0.936 0.008 250);
+        --qitu-preboot-accent: oklch(0.633 0.222 6.9);
+        background: var(--qitu-preboot-bg);
+        color: var(--qitu-preboot-text);
+      }
+
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        --qitu-preboot-bg: oklch(0.105 0.012 250);
+        --qitu-preboot-text: oklch(0.94 0.006 250);
+        --qitu-preboot-muted: oklch(0.74 0.012 250);
+        --qitu-preboot-panel: oklch(1 0 0 / 7.2%);
+        --qitu-preboot-row: oklch(1 0 0 / 10%);
+        --qitu-preboot-accent: oklch(0.701 0.151 4.4);
+      }
+
+      html,
+      body,
+      #root {
+        min-height: 100%;
+        margin: 0;
+        background: var(--qitu-preboot-bg);
+        color: var(--qitu-preboot-text);
+      }
+
+      body {
+        font-family:
+          "MiSans", "MiSans VF", "Noto Sans CJK SC", "Source Han Sans SC", "PingFang SC",
+          "Hiragino Sans GB", "HarmonyOS Sans SC", "Microsoft YaHei UI", "Microsoft YaHei",
+          sans-serif;
+      }
+
+      .qitu-preboot {
+        display: grid;
+        min-height: 100dvh;
+        grid-template-rows: 92px 1fr;
+        background: var(--qitu-preboot-bg);
+      }
+
+      .qitu-preboot-topbar {
+        display: grid;
+        grid-template-columns: 120px minmax(0, 1fr) 300px;
+        align-items: start;
+        gap: 24px;
+        padding: 21px;
+      }
+
+      .qitu-preboot-mark {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background:
+          linear-gradient(
+            135deg,
+            transparent 48%,
+            var(--qitu-preboot-accent) 49% 58%,
+            transparent 59%
+          ),
+          var(--qitu-preboot-text);
+      }
+
+      .qitu-preboot-tabs,
+      .qitu-preboot-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .qitu-preboot-actions {
+        justify-content: flex-end;
+      }
+
+      .qitu-preboot-dot,
+      .qitu-preboot-pill,
+      .qitu-preboot-line,
+      .qitu-preboot-block {
+        position: relative;
+        overflow: hidden;
+        background: var(--qitu-preboot-row);
+      }
+
+      .qitu-preboot-dot {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+      }
+
+      .qitu-preboot-pill {
+        width: 92px;
+        height: 32px;
+        border-radius: 14px;
+      }
+
+      .qitu-preboot-main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 21px;
+        padding: 0 21px 34px;
+      }
+
+      .qitu-preboot-panel {
+        min-height: 190px;
+        border-radius: 18px;
+        padding: 21px;
+        background: var(--qitu-preboot-panel);
+      }
+
+      .qitu-preboot-line {
+        height: 34px;
+        border-radius: 10px;
+      }
+
+      .qitu-preboot-block {
+        height: 86px;
+        margin-top: 13px;
+        border-radius: 10px;
+      }
+
+      .qitu-preboot-dot::after,
+      .qitu-preboot-pill::after,
+      .qitu-preboot-line::after,
+      .qitu-preboot-block::after {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          color-mix(in oklch, var(--qitu-preboot-text) 8%, transparent),
+          transparent
+        );
+        content: "";
+        transform: translateX(-100%);
+        animation: qitu-preboot-shimmer 1.6s infinite;
+      }
+
+      @keyframes qitu-preboot-shimmer {
+        100% {
+          transform: translateX(100%);
+        }
+      }
+
+      @media (max-width: 900px) {
+        .qitu-preboot-topbar {
+          grid-template-columns: 48px minmax(0, 1fr);
+        }
+
+        .qitu-preboot-actions {
+          display: none;
+        }
+
+        .qitu-preboot-main {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="qitu-preboot" role="status" aria-label="Loading qitu">
+        <div class="qitu-preboot-topbar" aria-hidden="true">
+          <span class="qitu-preboot-mark"></span>
+          <div class="qitu-preboot-tabs">
+            <span class="qitu-preboot-dot"></span>
+            <span class="qitu-preboot-dot"></span>
+            <span class="qitu-preboot-dot"></span>
+          </div>
+          <div class="qitu-preboot-actions">
+            <span class="qitu-preboot-dot"></span>
+            <span class="qitu-preboot-dot"></span>
+            <span class="qitu-preboot-pill"></span>
+          </div>
+        </div>
+        <main class="qitu-preboot-main" aria-hidden="true">
+          <section class="qitu-preboot-panel">
+            <div class="qitu-preboot-line"></div>
+            <div class="qitu-preboot-block"></div>
+            <div class="qitu-preboot-block"></div>
+          </section>
+          <aside class="qitu-preboot-panel">
+            <div class="qitu-preboot-line"></div>
+            <div class="qitu-preboot-block"></div>
+          </aside>
+        </main>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

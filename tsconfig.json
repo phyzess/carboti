@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "references": [
+    { "path": "./apps/web" },
+    { "path": "./apps/worker" },
+    { "path": "./examples/import-review" },
+    { "path": "./examples/json-records" },
+    { "path": "./templates/feature" },
+    { "path": "./packages/ai-advisory" },
+    { "path": "./packages/audit" },
+    { "path": "./packages/auth" },
+    { "path": "./packages/charts" },
+    { "path": "./packages/config" },
+    { "path": "./packages/db" },
+    { "path": "./packages/design-system" },
+    { "path": "./packages/email" },
+    { "path": "./packages/files" },
+    { "path": "./packages/i18n" },
+    { "path": "./packages/import-pipeline" },
+    { "path": "./packages/jobs" },
+    { "path": "./packages/rbac" },
+    { "path": "./packages/testing" },
+    { "path": "./packages/ui" }
+  ]
+}

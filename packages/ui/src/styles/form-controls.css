@@ -1,0 +1,112 @@
+.qitu-command-input {
+  height: 2.5rem;
+  min-height: 2.5rem;
+  min-width: 0;
+  flex: 1 1 auto;
+  border-color: transparent;
+  padding-inline: 0;
+  background: transparent;
+  font-size: var(--qitu-text-copy-14);
+  line-height: var(--qitu-leading-copy-14);
+  outline: none;
+}
+
+.qitu-command-input:focus {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.qitu-command-input::placeholder {
+  color: var(--qitu-dim);
+}
+
+.qitu-field-control {
+  display: block;
+  width: 100%;
+  height: 2rem;
+  min-height: 2rem;
+  border: 1px solid color-mix(in oklch, var(--qitu-input-border) 72%, transparent);
+  border-radius: var(--qitu-radius-control);
+  padding-inline: var(--qitu-space-o3);
+  color: var(--qitu-text);
+  background: var(--qitu-input-bg);
+  font-size: var(--qitu-text-button-12);
+  line-height: var(--qitu-leading-button);
+  transition:
+    background-color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    border-color var(--qitu-motion-fast) var(--qitu-ease-standard),
+    box-shadow var(--qitu-motion-fast) var(--qitu-ease-standard);
+}
+
+.qitu-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qitu-space-o2);
+  text-align: left;
+}
+
+.qitu-select-icon {
+  display: inline-flex;
+  color: var(--qitu-dim);
+}
+
+.qitu-select-popup {
+  z-index: var(--qitu-z-overlay);
+  min-width: var(--anchor-width);
+  max-height: min(18rem, var(--available-height));
+  overflow: auto;
+  padding: var(--qitu-space-o1);
+}
+
+.qitu-select-list {
+  display: grid;
+  gap: var(--qitu-space-o1);
+}
+
+.qitu-select-item {
+  min-height: 2rem;
+  justify-content: space-between;
+  padding: var(--qitu-space-o2) var(--qitu-space-o3);
+}
+
+.qitu-select-item-indicator {
+  display: inline-flex;
+  color: var(--qitu-chroma-active);
+}
+
+.qitu-field-control::placeholder {
+  color: color-mix(in oklch, var(--qitu-muted) 58%, transparent);
+}
+
+.qitu-field-control:focus {
+  border-color: color-mix(in oklch, var(--qitu-color-ring) 50%, var(--qitu-line));
+  background: var(--qitu-surface);
+  box-shadow: var(--qitu-shadow-focus-ring);
+  outline: none;
+}
+
+.qitu-field-control::file-selector-button {
+  height: calc(2rem - 2px);
+  margin: 0 var(--qitu-space-o3) 0 calc(var(--qitu-space-o3) * -1);
+  border: 0;
+  border-right: 1px solid color-mix(in oklch, var(--qitu-line) 52%, transparent);
+  padding-inline: var(--qitu-space-o3);
+  color: var(--qitu-muted);
+  background: transparent;
+  font: inherit;
+}
+
+.qitu-date-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qitu-space-o2);
+  text-align: left;
+}
+
+.qitu-date-popover {
+  width: 18rem;
+  padding: var(--qitu-space-o3);
+}

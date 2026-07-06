@@ -1,0 +1,24 @@
+@theme inline {
+  --color-background: var(--qitu-color-background);
+  --color-foreground: var(--qitu-color-foreground);
+  --color-card: var(--qitu-color-card);
+  --color-card-foreground: var(--qitu-color-card-foreground);
+  --color-popover: var(--qitu-color-popover);
+  --color-popover-foreground: var(--qitu-color-popover-foreground);
+  --color-primary: var(--qitu-color-primary);
+  --color-primary-foreground: var(--qitu-color-primary-foreground);
+  --color-secondary: var(--qitu-color-secondary);
+  --color-secondary-foreground: var(--qitu-color-secondary-foreground);
+  --color-muted: var(--qitu-color-muted-surface);
+  --color-muted-foreground: var(--qitu-color-muted-foreground);
+  --color-accent: var(--qitu-color-accent);
+  --color-accent-foreground: var(--qitu-color-accent-foreground);
+  --color-destructive: var(--qitu-color-destructive);
+  --color-destructive-foreground: var(--qitu-color-destructive-foreground);
+  --color-border: var(--qitu-color-border);
+  --color-input: var(--qitu-color-input);
+  --color-ring: var(--qitu-color-ring);
+  --radius-md: var(--qitu-radius-md);
+  --radius-lg: var(--qitu-radius-lg);
+  --radius-xl: var(--qitu-radius-xl);
+}

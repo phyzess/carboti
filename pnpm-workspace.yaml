@@ -1,0 +1,16 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "examples/*"
+  - "templates/feature"
+
+autoInstallPeers: false
+
+onlyBuiltDependencies:
+  - "esbuild"
+  - "sharp"
+  - "workerd"
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true

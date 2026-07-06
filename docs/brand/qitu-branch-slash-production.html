@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>qitu branch slash production</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: oklch(0.198 0.016 256.8);
+        --muted: oklch(0.53 0.011 258.4);
+        --line: oklch(0.912 0.01 238.5);
+        --paper: oklch(0.977 0.004 236.5);
+        --card: oklch(1 0 0);
+        --good: oklch(0.633 0.222 6.9);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family:
+          "MiSans", "MiSans VF", "Noto Sans CJK SC", "PingFang SC", ui-sans-serif, system-ui,
+          sans-serif;
+      }
+
+      main {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 54px;
+      }
+
+      header {
+        display: grid;
+        grid-template-columns: minmax(0, 0.9fr) minmax(360px, 0.55fr);
+        gap: 42px;
+        align-items: end;
+        padding-bottom: 28px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      h1,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        max-width: 760px;
+        font-size: 42px;
+        line-height: 1;
+        letter-spacing: 0;
+        text-transform: lowercase;
+      }
+
+      p,
+      small {
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 22px;
+        margin-top: 34px;
+      }
+
+      .rules {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 24px;
+      }
+
+      .rule {
+        min-height: 118px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+        background: oklch(1 0 0 / 72%);
+      }
+
+      .rule strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      figure {
+        margin: 0;
+        border: 1px solid oklch(0.633 0.222 6.9 / 28%);
+        background: var(--card);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .mark {
+        display: grid;
+        place-items: center;
+        aspect-ratio: 1;
+        padding: 48px;
+        background:
+          radial-gradient(circle at 50% 45%, oklch(0.198 0.016 256.8 / 3.5%), transparent 50%),
+          oklch(1 0 0);
+      }
+
+      .mark img {
+        display: block;
+        width: min(78%, 280px);
+        height: min(78%, 280px);
+        object-fit: contain;
+      }
+
+      figcaption {
+        display: grid;
+        gap: 10px;
+        min-height: 190px;
+        padding: 18px;
+        border-top: 1px solid var(--line);
+      }
+
+      .kicker {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      b {
+        font-size: 18px;
+        line-height: 1.1;
+        text-transform: lowercase;
+      }
+
+      .tag {
+        width: fit-content;
+        border-radius: 999px;
+        padding: 5px 9px;
+        background: oklch(0.633 0.222 6.9 / 12%);
+        color: var(--good);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .sizes {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 72px;
+        padding-top: 2px;
+      }
+
+      .sizes img {
+        display: block;
+        object-fit: contain;
+      }
+
+      .s64 {
+        width: 64px;
+        height: 64px;
+      }
+
+      .s32 {
+        width: 32px;
+        height: 32px;
+      }
+
+      .s24 {
+        width: 24px;
+        height: 24px;
+      }
+
+      @media (max-width: 980px) {
+        main {
+          padding: 30px;
+        }
+
+        header,
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>qitu branch slash production</h1>
+        <p>
+          Final production board for the locked branch slash direction. The SVG is the source of
+          truth; the PNG is a rendered preview; the app icon is the same geometry on an adaptive
+          rounded-square background.
+        </p>
+      </header>
+
+      <section class="rules" aria-label="qitu icon production rules">
+        <div class="rule">
+          <strong>geometry</strong>
+          <small>
+            The blue decision point is sized for the 30-36px shell mark first, and keeps a smooth
+            negative-space notch on the adjacent branch.
+          </small>
+        </div>
+        <div class="rule">
+          <strong>naked mark</strong>
+          <small>
+            The React shell mark and master SVG stay transparent. They inherit the surrounding UI
+            surface and only draw the branch slash forms plus the blue decision point.
+          </small>
+        </div>
+        <div class="rule">
+          <strong>app icon</strong>
+          <small>
+            Favicon and app-icon assets own the rounded background. Light mode uses cool off-white;
+            dark mode switches to steel-blue ink with light glyph forms.
+          </small>
+        </div>
+      </section>
+
+      <section class="grid" aria-label="qitu branch slash production assets">
+        <figure>
+          <div class="mark">
+            <img
+              src="../../apps/web/public/brand/qitu-branch-slash-visual-master.png"
+              alt="qitu branch slash visual master"
+            />
+          </div>
+          <figcaption>
+            <span class="kicker">rendered preview</span>
+            <b>branch slash png</b>
+            <span class="tag">preview</span>
+            <small>
+              PNG export from the same source SVG for visual review, small-size checks, and places
+              that need a raster preview.
+            </small>
+            <div class="sizes" aria-label="rendered preview sizes">
+              <img
+                class="s64"
+                src="../../apps/web/public/brand/qitu-branch-slash-visual-master.png"
+                alt=""
+              />
+              <img
+                class="s32"
+                src="../../apps/web/public/brand/qitu-branch-slash-visual-master.png"
+                alt=""
+              />
+              <img
+                class="s24"
+                src="../../apps/web/public/brand/qitu-branch-slash-visual-master.png"
+                alt=""
+              />
+            </div>
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="mark">
+            <img
+              src="../../apps/web/public/brand/qitu-branch-slash-master.svg"
+              alt="qitu branch slash master svg"
+            />
+          </div>
+          <figcaption>
+            <span class="kicker">svg source</span>
+            <b>master trace</b>
+            <span class="tag">implementation</span>
+            <small>
+              Maintainable transparent vector source for product use. It preserves the separated
+              forms, smooth notch, and restrained blue decision point.
+            </small>
+            <div class="sizes" aria-label="master svg sizes">
+              <img
+                class="s64"
+                src="../../apps/web/public/brand/qitu-branch-slash-master.svg"
+                alt=""
+              />
+              <img
+                class="s32"
+                src="../../apps/web/public/brand/qitu-branch-slash-master.svg"
+                alt=""
+              />
+              <img
+                class="s24"
+                src="../../apps/web/public/brand/qitu-branch-slash-master.svg"
+                alt=""
+              />
+            </div>
+          </figcaption>
+        </figure>
+
+        <figure>
+          <div class="mark">
+            <img src="../../apps/web/public/qitu-mark.svg" alt="qitu official app mark" />
+          </div>
+          <figcaption>
+            <span class="kicker">official asset</span>
+            <b>app mark</b>
+            <span class="tag">ready</span>
+            <small>
+              Static favicon and app icon use the same branch slash geometry, with an embedded
+              light/dark background rule for stable contrast.
+            </small>
+            <div class="sizes" aria-label="official mark sizes">
+              <img class="s64" src="../../apps/web/public/qitu-mark.svg" alt="" />
+              <img class="s32" src="../../apps/web/public/qitu-mark.svg" alt="" />
+              <img class="s24" src="../../apps/web/public/qitu-mark.svg" alt="" />
+            </div>
+          </figcaption>
+        </figure>
+      </section>
+    </main>
+  </body>
+</html>

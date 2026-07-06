@@ -1,0 +1,56 @@
+export function assertRuntimeOperationsInventoryGuards(context) {
+  for (const file of [
+    "scripts/health-check.mjs",
+    "scripts/health-check-config.mjs",
+    "scripts/health-check-url.mjs",
+    "scripts/health-check-runner.mjs",
+    "scripts/wrangler-observed-process.mjs",
+    "scripts/ops-failed-jobs.mjs",
+    "scripts/ops-failed-jobs-config.mjs",
+    "scripts/ops-failed-jobs-query.mjs",
+    "scripts/ops-failed-jobs-runner.mjs",
+    "scripts/cleanup-local-smoke.mjs",
+    "scripts/cleanup-local-smoke-sql.mjs",
+    "scripts/cleanup-local-smoke-d1.mjs",
+    "scripts/release-gate.mjs",
+    "scripts/release-gate-config.mjs",
+    "scripts/release-gate-args.mjs",
+    "scripts/release-gate-plan.mjs",
+    "scripts/release-gate-runner.mjs",
+    "scripts/deploy-demo-pages.mjs",
+    "scripts/deploy-demo-pages-args.mjs",
+    "scripts/deploy-demo-pages-output.mjs",
+    "scripts/deploy-demo-pages-runner.mjs",
+    "scripts/deploy-preflight.mjs",
+    "scripts/deploy-preflight-config.mjs",
+    "scripts/deploy-preflight-policy.mjs",
+    "scripts/deploy-preflight-checks.mjs",
+    "scripts/deploy-preflight-url-checks.mjs",
+    "scripts/deploy-preflight-email-checks.mjs",
+    "scripts/deploy-preflight-binding-checks.mjs",
+    "scripts/deploy-preflight-output.mjs",
+    "scripts/operator-admin-invitation.mjs",
+    "scripts/operator-admin-invitation-config.mjs",
+    "scripts/operator-admin-invitation-args.mjs",
+    "scripts/operator-admin-invitation-validation.mjs",
+    "scripts/operator-admin-invitation-build.mjs",
+    "scripts/operator-admin-invitation-sql.mjs",
+    "scripts/operator-admin-invitation-output.mjs",
+    "scripts/operator-admin-invitation-runner.mjs",
+    "scripts/operator-admin-invitation-d1.mjs",
+    "scripts/wrangler-deploy.mjs",
+    "scripts/wrangler-deploy-config.mjs",
+    "scripts/wrangler-deploy-runner.mjs",
+    "scripts/wrangler-deploy-version.mjs",
+    "scripts/wrangler-deploy-dry-run.mjs",
+    "scripts/wrangler-deploy-dry-run-config.mjs",
+    "scripts/wrangler-deploy-dry-run-runner.mjs",
+    "scripts/wrangler-deploy-dry-run-observer.mjs",
+  ]) {
+    assertExists(context, file);
+  }
+}
+
+function assertExists({ assert, exists }, file) {
+  assert(exists(file), `${file} must exist.`);
+}
