@@ -15,6 +15,9 @@ export function assertWorkerIntegrationCoverageGuards(context) {
       workerIntegration.includes("/api/carboti/messages/") &&
       workerIntegration.includes("not_a_real_artifact") &&
       workerIntegration.includes("external.ledger.summary.v1") &&
+      workerIntegration.includes("/api/carboti/processors/external") &&
+      workerIntegration.includes("x-carboti-signature") &&
+      workerIntegration.includes("processor_response_failed") &&
       workerIntegration.includes("carboti_api_clients") &&
       workerIntegration.includes("raw-http/") &&
       workerIntegration.includes("fixture-invalid-number.txt") &&
@@ -36,7 +39,7 @@ export function assertWorkerIntegrationCoverageGuards(context) {
       workerIntegration.includes("/commit") &&
       workerIntegration.includes("admin can list invitations") &&
       workerIntegration.includes("/api/audit-events"),
-    "Worker integration must exercise invite, member and invitation management, login, password reset, text adapter, JSON adapter, Carboti HTTP ingest/artifact/replay APIs, AI advisory, retry, review, approve, commit, and audit visibility.",
+    "Worker integration must exercise invite, member and invitation management, login, password reset, text adapter, JSON adapter, Carboti HTTP ingest/artifact/outbound processor/replay APIs, AI advisory, retry, review, approve, commit, and audit visibility.",
   );
   assert(
     workerIntegration.includes("DatabaseSync") &&

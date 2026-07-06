@@ -8,6 +8,8 @@ export type CarbotiApiScope =
   | "artifacts:read"
   | "artifacts:write"
   | "lineage:read"
+  | "processors:invoke"
+  | "processors:write"
   | "replay:write";
 
 export type CarbotiApiClient = {

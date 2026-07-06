@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { assert, expectApiError, expectStatus } from "./worker-integration-http.mjs";
 
 const apiToken = "carboti-api-integration-token";
 const apiClientId = "api-client:integration";
+const processorSigningSecret = "processor-signing-secret-for-integration";
 const apiHeaders = {
   authorization: `Bearer ${apiToken}`,
 };
@@ -186,6 +188,168 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
     "submitted artifact lineage links processor run to artifact",
   );
 
+  const processorResponse = await client.post(
+    "/api/carboti/processors/external",
+    JSON.stringify({
+      endpointUrl: "https://processor.example.test/process",
+      name: "Integration processor",
+      signingSecret: processorSigningSecret,
+      timeoutSeconds: 5,
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(processorResponse, 201);
+  const processor = await processorResponse.json();
+  assert(processor.kind === "external_webhook", "external processor config is created");
+
+  let signedRequestVerified = false;
+  await withMockedFetch(
+    async (request) => {
+      const body = await request.text();
+      const timestamp = request.headers.get("x-carboti-timestamp");
+      const signature = request.headers.get("x-carboti-signature");
+      const expectedSignature = `v1=${createHmac("sha256", processorSigningSecret)
+        .update(`${timestamp}.${body}`)
+        .digest("hex")}`;
+      signedRequestVerified = signature === expectedSignature;
+
+      const payload = JSON.parse(body);
+      assert(payload.messageId === ingest.messageId, "processor receives the message id");
+      assert(
+        payload.inputObject.id === ingest.normalizedMessageObjectId,
+        "processor receives normalized input object",
+      );
+      assert(
+        request.headers.get("x-carboti-idempotency-key"),
+        "processor request includes idempotency key",
+      );
+
+      return new Response(
+        JSON.stringify({
+          artifacts: [
+            {
+              data: {
+                extractedTotal: 42,
+              },
+              kind: "processor_output",
+              schemaId: "external.processor.output.v1",
+            },
+          ],
+        }),
+        {
+          headers: {
+            "content-type": "application/json",
+          },
+          status: 200,
+        },
+      );
+    },
+    async () => {
+      const invokeResponse = await client.post(
+        `/api/carboti/processors/${processor.processorId}/invoke`,
+        JSON.stringify({
+          messageId: ingest.messageId,
+        }),
+        {
+          headers: {
+            ...apiHeaders,
+            "content-type": "application/json",
+          },
+        },
+      );
+      await expectStatus(invokeResponse, 201);
+      const invoke = await invokeResponse.json();
+      assert(invoke.status === "succeeded", "external processor invocation succeeds");
+      assert(invoke.artifactIds.length === 1, "external processor response creates one artifact");
+
+      const processorArtifact = await client.json(
+        `/api/carboti/artifacts/${invoke.artifactIds[0]}`,
+        {
+          headers: apiHeaders,
+        },
+      );
+      assert(
+        processorArtifact.artifact.processorRunId === invoke.processorRunId,
+        "processor response artifact links to invocation run",
+      );
+      assert(
+        processorArtifact.artifact.data.extractedTotal === 42,
+        "processor response artifact stores returned data",
+      );
+
+      const processorRun = await env.DB.prepare(
+        "SELECT status, processor_id, output_artifact_count FROM carboti_processor_runs WHERE id = ?",
+      )
+        .bind(invoke.processorRunId)
+        .first();
+      assert(processorRun.status === "succeeded", "processor invocation records succeeded run");
+      assert(
+        processorRun.processor_id === processor.processorId,
+        "processor invocation run references external processor",
+      );
+      assert(
+        processorRun.output_artifact_count === 1,
+        "processor invocation records output artifact count",
+      );
+
+      const delivery = await env.DB.prepare(
+        "SELECT status, response_status FROM carboti_webhook_deliveries WHERE id = ?",
+      )
+        .bind(invoke.deliveryId)
+        .first();
+      assert(delivery.status === "delivered", "processor invocation records delivery success");
+      assert(delivery.response_status === 200, "processor delivery records response status");
+    },
+  );
+  assert(signedRequestVerified, "processor invocation signs the outbound request with HMAC");
+
+  await withMockedFetch(
+    async () =>
+      new Response("processor exploded", {
+        status: 500,
+      }),
+    async () => {
+      await expectApiError(
+        await client.post(
+          `/api/carboti/processors/${processor.processorId}/invoke`,
+          JSON.stringify({
+            messageId: ingest.messageId,
+          }),
+          {
+            headers: {
+              ...apiHeaders,
+              "content-type": "application/json",
+            },
+          },
+        ),
+        502,
+        "processor_response_failed",
+      );
+
+      const failedRun = await env.DB.prepare(
+        "SELECT status, error_message FROM carboti_processor_runs WHERE processor_id = ? ORDER BY started_at DESC LIMIT 1",
+      )
+        .bind(processor.processorId)
+        .first();
+      assert(failedRun.status === "failed", "failed processor response records failed run");
+      assert(
+        failedRun.error_message.includes("processor exploded"),
+        "failed processor run stores response error text",
+      );
+
+      const failedDelivery = await env.DB.prepare(
+        "SELECT status, response_status FROM carboti_webhook_deliveries ORDER BY created_at DESC LIMIT 1",
+      ).first();
+      assert(failedDelivery.status === "failed", "failed processor response records delivery");
+      assert(failedDelivery.response_status === 500, "failed delivery records response status");
+    },
+  );
+
   const replayResponse = await client.post(`/api/carboti/messages/${ingest.messageId}/replay`, "", {
     headers: apiHeaders,
   });
@@ -277,6 +441,8 @@ async function seedApiClient(env) {
         "artifacts:read",
         "artifacts:write",
         "lineage:read",
+        "processors:invoke",
+        "processors:write",
         "replay:write",
       ]),
       "active",
@@ -288,4 +454,14 @@ async function seedApiClient(env) {
 
 function hashSecret(secret) {
   return `sha256.${createHash("sha256").update(secret).digest("base64url")}`;
+}
+
+async function withMockedFetch(fetchImplementation, callback) {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (input, init) => fetchImplementation(new Request(input, init));
+  try {
+    await callback();
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 }

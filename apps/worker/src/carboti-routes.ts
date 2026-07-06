@@ -3,10 +3,12 @@ import { registerCarbotiArtifactSubmitRoute } from "./carboti-artifact-submit-ro
 import { registerCarbotiContractRoute } from "./carboti-contract-route";
 import { registerCarbotiEvidenceRoutes } from "./carboti-evidence-routes";
 import { registerCarbotiHttpIngestRoute } from "./carboti-http-ingest-route";
+import { registerCarbotiProcessorRoutes } from "./carboti-processor-routes";
 
 export function registerCarbotiRoutes(app: Hono<{ Bindings: Env }>): void {
   registerCarbotiContractRoute(app);
   registerCarbotiHttpIngestRoute(app);
   registerCarbotiArtifactSubmitRoute(app);
+  registerCarbotiProcessorRoutes(app);
   registerCarbotiEvidenceRoutes(app);
 }

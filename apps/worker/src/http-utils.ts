@@ -69,7 +69,7 @@ export function authError(
   context: AppContext,
   code: string,
   message: string,
-  status: 400 | 401 | 403 | 404 | 409 | 410 | 500,
+  status: 400 | 401 | 403 | 404 | 409 | 410 | 500 | 502,
 ): Response {
   return context.json(
     {

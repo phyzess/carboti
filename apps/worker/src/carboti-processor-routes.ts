@@ -1,0 +1,819 @@
+import { createAuditEvent } from "@carboti/audit";
+import { CarbotiArtifactKindSchema } from "@carboti/core";
+import type { Hono } from "hono";
+import * as v from "valibot";
+import { prepareAuditInsert } from "./audit-store";
+import {
+  apiClientActorId,
+  requireCarbotiApiClient,
+  type CarbotiApiClient,
+} from "./carboti-api-auth";
+import { authError, parseRequestJson, type AppContext } from "./http-utils";
+
+const CreateExternalProcessorInputSchema = v.object({
+  endpointUrl: v.pipe(v.string(), v.url()),
+  name: v.string(),
+  signingSecret: v.pipe(v.string(), v.minLength(16)),
+  timeoutSeconds: v.optional(v.number()),
+});
+
+const InvokeExternalProcessorInputSchema = v.object({
+  messageId: v.string(),
+});
+
+const ExternalProcessorArtifactSchema = v.object({
+  contentType: v.optional(v.string()),
+  data: v.unknown(),
+  kind: CarbotiArtifactKindSchema,
+  schemaId: v.optional(v.string()),
+});
+
+const ExternalProcessorResponseSchema = v.object({
+  artifacts: v.array(ExternalProcessorArtifactSchema),
+});
+
+type CreateExternalProcessorInput = v.InferOutput<typeof CreateExternalProcessorInputSchema>;
+type ExternalProcessorArtifact = v.InferOutput<typeof ExternalProcessorArtifactSchema>;
+type ExternalProcessorResponse = v.InferOutput<typeof ExternalProcessorResponseSchema>;
+
+type ProcessorConfigRow = {
+  config_json: string | null;
+  endpoint_url: string | null;
+  id: string;
+  name: string;
+  timeout_seconds: number | null;
+  workspace_id: string;
+};
+
+type ProcessorInputObjectRow = {
+  data_json: string | null;
+  id: string;
+  kind: string;
+  object_key: string | null;
+  source_id: string | null;
+};
+
+type ProcessorArtifactRow = {
+  data_json: string | null;
+  id: string;
+  kind: string;
+};
+
+export function registerCarbotiProcessorRoutes(app: Hono<{ Bindings: Env }>): void {
+  app.post("/api/carboti/processors/external", async (context) => {
+    const auth = await requireCarbotiApiClient(context, "processors:write");
+    if (!auth.ok) return auth.response;
+
+    const parsed = await parseRequestJson(context, CreateExternalProcessorInputSchema);
+    if (!parsed.ok) return parsed.response;
+
+    return createExternalProcessor(context, {
+      client: auth.client,
+      input: parsed.value,
+    });
+  });
+
+  app.post("/api/carboti/processors/:processorId/invoke", async (context) => {
+    const auth = await requireCarbotiApiClient(context, "processors:invoke");
+    if (!auth.ok) return auth.response;
+
+    const parsed = await parseRequestJson(context, InvokeExternalProcessorInputSchema);
+    if (!parsed.ok) return parsed.response;
+
+    return invokeExternalProcessor(context, {
+      client: auth.client,
+      messageId: parsed.value.messageId,
+      processorId: context.req.param("processorId"),
+    });
+  });
+}
+
+async function createExternalProcessor(
+  context: AppContext,
+  input: {
+    client: CarbotiApiClient;
+    input: CreateExternalProcessorInput;
+  },
+): Promise<Response> {
+  const now = new Date().toISOString();
+  const processorId = `processor:external:${crypto.randomUUID()}`;
+  const endpointId = endpointIdFor(processorId);
+  const timeoutSeconds = Math.min(Math.max(input.input.timeoutSeconds ?? 30, 1), 60);
+
+  await context.env.DB.batch([
+    context.env.DB.prepare(
+      `
+        INSERT INTO carboti_processor_configs (
+          id,
+          workspace_id,
+          kind,
+          name,
+          endpoint_url,
+          timeout_seconds,
+          status,
+          config_json,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    ).bind(
+      processorId,
+      input.client.workspaceId,
+      "external_webhook",
+      input.input.name,
+      input.input.endpointUrl,
+      timeoutSeconds,
+      "active",
+      JSON.stringify({
+        apiClientId: input.client.id,
+        signingSecret: input.input.signingSecret,
+      }),
+      now,
+      now,
+    ),
+    context.env.DB.prepare(
+      `
+        INSERT INTO carboti_webhook_endpoints (
+          id,
+          workspace_id,
+          url,
+          status,
+          secret_ref,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+    ).bind(
+      endpointId,
+      input.client.workspaceId,
+      input.input.endpointUrl,
+      "active",
+      `processor:${processorId}:inline-signing-key`,
+      now,
+      now,
+    ),
+    prepareAuditInsert(
+      context.env,
+      createAuditEvent({
+        action: "carboti.processor.created",
+        actor: {
+          id: apiClientActorId(input.client),
+          kind: "system",
+        },
+        metadata: {
+          endpointId,
+          endpointUrl: input.input.endpointUrl,
+          timeoutSeconds,
+        },
+        subject: {
+          id: processorId,
+          kind: "carboti_processor",
+        },
+      }),
+    ),
+  ]);
+
+  return context.json(
+    {
+      endpointId,
+      endpointUrl: input.input.endpointUrl,
+      kind: "external_webhook",
+      processorId,
+      status: "active",
+      timeoutSeconds,
+    },
+    201,
+  );
+}
+
+async function invokeExternalProcessor(
+  context: AppContext,
+  input: {
+    client: CarbotiApiClient;
+    messageId: string;
+    processorId: string;
+  },
+): Promise<Response> {
+  const processor = await readProcessorConfig(context, input.client, input.processorId);
+  if (!processor?.endpoint_url) {
+    return authError(context, "processor_not_found", "Processor was not found.", 404);
+  }
+
+  const config = parseProcessorConfig(processor.config_json);
+  if (!config.signingSecret) {
+    return authError(
+      context,
+      "processor_signing_secret_missing",
+      "Processor is not invokable.",
+      409,
+    );
+  }
+
+  const processorInput = await readProcessorInputObject(context, input.client, input.messageId);
+  if (!processorInput) {
+    return authError(context, "message_not_found", "Message was not found.", 404);
+  }
+
+  const now = new Date().toISOString();
+  const processorRunId = crypto.randomUUID();
+  const deliveryId = crypto.randomUUID();
+  const endpointId = endpointIdFor(processor.id);
+  const payload = {
+    artifacts: await readProcessorInputArtifacts(context, input.client, input.messageId),
+    inputObject: {
+      data: parseDataJson(processorInput.data_json),
+      id: processorInput.id,
+      kind: processorInput.kind,
+      objectKey: processorInput.object_key,
+    },
+    messageId: input.messageId,
+    processorId: processor.id,
+    processorRunId,
+    requestedAt: now,
+  };
+  const body = JSON.stringify(payload);
+  const timestamp = now;
+  const signature = await hmacSha256Hex(config.signingSecret, `${timestamp}.${body}`);
+
+  let response: Response;
+  try {
+    response = await fetch(processor.endpoint_url, {
+      body,
+      headers: {
+        "content-type": "application/json",
+        "x-carboti-delivery-id": deliveryId,
+        "x-carboti-idempotency-key": processorRunId,
+        "x-carboti-signature": `v1=${signature}`,
+        "x-carboti-timestamp": timestamp,
+      },
+      method: "POST",
+      signal: AbortSignal.timeout((processor.timeout_seconds ?? 30) * 1000),
+    });
+  } catch (error) {
+    await recordProcessorFailure(context, {
+      client: input.client,
+      deliveryId,
+      endpointId,
+      errorMessage: error instanceof Error ? error.message : "Processor invocation failed.",
+      inputObjectId: processorInput.id,
+      messageId: input.messageId,
+      now,
+      processorId: processor.id,
+      processorRunId,
+      responseStatus: null,
+    });
+    return authError(context, "processor_invocation_failed", "Processor invocation failed.", 502);
+  }
+
+  if (!response.ok) {
+    const errorMessage = await safeResponseText(response);
+    await recordProcessorFailure(context, {
+      client: input.client,
+      deliveryId,
+      endpointId,
+      errorMessage,
+      inputObjectId: processorInput.id,
+      messageId: input.messageId,
+      now,
+      processorId: processor.id,
+      processorRunId,
+      responseStatus: response.status,
+    });
+    return authError(context, "processor_response_failed", "Processor returned an error.", 502);
+  }
+
+  const responseBody = await readProcessorResponse(response);
+  if (!responseBody.ok) {
+    await recordProcessorFailure(context, {
+      client: input.client,
+      deliveryId,
+      endpointId,
+      errorMessage: responseBody.message,
+      inputObjectId: processorInput.id,
+      messageId: input.messageId,
+      now,
+      processorId: processor.id,
+      processorRunId,
+      responseStatus: response.status,
+    });
+    return authError(context, "processor_response_invalid", responseBody.message, 502);
+  }
+
+  await recordProcessorSuccess(context, {
+    artifacts: responseBody.value.artifacts,
+    client: input.client,
+    deliveryId,
+    endpointId,
+    inputObject: processorInput,
+    messageId: input.messageId,
+    now,
+    processorId: processor.id,
+    processorRunId,
+    responseStatus: response.status,
+  });
+
+  return context.json(
+    {
+      artifactIds: responseBody.value.artifacts.map((_, index) =>
+        artifactIdFor(input.messageId, processorRunId, index),
+      ),
+      deliveryId,
+      processorRunId,
+      status: "succeeded",
+    },
+    201,
+  );
+}
+
+async function readProcessorConfig(
+  context: AppContext,
+  client: CarbotiApiClient,
+  processorId: string,
+): Promise<ProcessorConfigRow | null> {
+  return context.env.DB.prepare(
+    `
+      SELECT id, workspace_id, name, endpoint_url, timeout_seconds, config_json
+      FROM carboti_processor_configs
+      WHERE id = ?
+        AND workspace_id = ?
+        AND kind = 'external_webhook'
+        AND status = 'active'
+      LIMIT 1
+    `,
+  )
+    .bind(processorId, client.workspaceId)
+    .first<ProcessorConfigRow>();
+}
+
+async function readProcessorInputObject(
+  context: AppContext,
+  client: CarbotiApiClient,
+  messageId: string,
+): Promise<ProcessorInputObjectRow | null> {
+  const normalized = await context.env.DB.prepare(
+    `
+      SELECT id, kind, source_id, object_key, data_json
+      FROM carboti_objects
+      WHERE workspace_id = ?
+        AND message_id = ?
+        AND kind = 'normalized_message'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `,
+  )
+    .bind(client.workspaceId, messageId)
+    .first<ProcessorInputObjectRow>();
+
+  if (normalized) return normalized;
+
+  return context.env.DB.prepare(
+    `
+      SELECT id, kind, source_id, object_key, data_json
+      FROM carboti_objects
+      WHERE workspace_id = ?
+        AND message_id = ?
+        AND kind IN ('raw_document', 'raw_email')
+      ORDER BY created_at ASC
+      LIMIT 1
+    `,
+  )
+    .bind(client.workspaceId, messageId)
+    .first<ProcessorInputObjectRow>();
+}
+
+async function readProcessorInputArtifacts(
+  context: AppContext,
+  client: CarbotiApiClient,
+  messageId: string,
+): Promise<Array<Record<string, unknown>>> {
+  const result = await context.env.DB.prepare(
+    `
+      SELECT id, kind, data_json
+      FROM carboti_artifacts
+      WHERE workspace_id = ?
+        AND message_id = ?
+      ORDER BY created_at ASC
+      LIMIT 20
+    `,
+  )
+    .bind(client.workspaceId, messageId)
+    .all<ProcessorArtifactRow>();
+
+  return result.results.map((artifact) => ({
+    data: parseDataJson(artifact.data_json),
+    id: artifact.id,
+    kind: artifact.kind,
+  }));
+}
+
+async function recordProcessorSuccess(
+  context: AppContext,
+  input: {
+    artifacts: ExternalProcessorArtifact[];
+    client: CarbotiApiClient;
+    deliveryId: string;
+    endpointId: string;
+    inputObject: ProcessorInputObjectRow;
+    messageId: string;
+    now: string;
+    processorId: string;
+    processorRunId: string;
+    responseStatus: number;
+  },
+): Promise<void> {
+  const artifactStatements = input.artifacts.flatMap((artifact, index) => {
+    const artifactId = artifactIdFor(input.messageId, input.processorRunId, index);
+    const dataJson = JSON.stringify(artifact.data);
+    const size = new TextEncoder().encode(dataJson).byteLength;
+    return [
+      context.env.DB.prepare(
+        `
+          INSERT INTO carboti_objects (
+            id,
+            workspace_id,
+            kind,
+            source_id,
+            message_id,
+            object_key,
+            content_type,
+            content_hash,
+            size,
+            data_json,
+            created_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      ).bind(
+        artifactId,
+        input.client.workspaceId,
+        "artifact",
+        input.inputObject.source_id,
+        input.messageId,
+        null,
+        artifact.contentType ?? "application/json",
+        null,
+        size,
+        JSON.stringify({
+          artifactKind: artifact.kind,
+          processorId: input.processorId,
+        }),
+        input.now,
+      ),
+      context.env.DB.prepare(
+        `
+          INSERT INTO carboti_artifacts (
+            id,
+            workspace_id,
+            kind,
+            message_id,
+            processor_run_id,
+            schema_id,
+            object_key,
+            content_type,
+            content_hash,
+            size,
+            data_json,
+            created_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      ).bind(
+        artifactId,
+        input.client.workspaceId,
+        artifact.kind,
+        input.messageId,
+        input.processorRunId,
+        artifact.schemaId ?? null,
+        null,
+        artifact.contentType ?? "application/json",
+        null,
+        size,
+        dataJson,
+        input.now,
+      ),
+      context.env.DB.prepare(
+        `
+          INSERT INTO carboti_lineage_edges (
+            id,
+            workspace_id,
+            from_object_id,
+            to_object_id,
+            relation,
+            processor_run_id,
+            created_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `,
+      ).bind(
+        crypto.randomUUID(),
+        input.client.workspaceId,
+        input.inputObject.id,
+        artifactId,
+        "processed_into",
+        input.processorRunId,
+        input.now,
+      ),
+    ];
+  });
+
+  await context.env.DB.batch([
+    context.env.DB.prepare(
+      `
+        INSERT INTO carboti_processor_runs (
+          id,
+          workspace_id,
+          processor_id,
+          pipeline_id,
+          message_id,
+          status,
+          input_object_id,
+          output_artifact_count,
+          error_message,
+          started_at,
+          completed_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    ).bind(
+      input.processorRunId,
+      input.client.workspaceId,
+      input.processorId,
+      null,
+      input.messageId,
+      "succeeded",
+      input.inputObject.id,
+      input.artifacts.length,
+      null,
+      input.now,
+      input.now,
+    ),
+    context.env.DB.prepare(
+      `
+        INSERT INTO carboti_webhook_deliveries (
+          id,
+          endpoint_id,
+          event_type,
+          status,
+          attempt_count,
+          response_status,
+          error_message,
+          next_attempt_at,
+          delivered_at,
+          created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    ).bind(
+      input.deliveryId,
+      input.endpointId,
+      "processor.invoke",
+      "delivered",
+      1,
+      input.responseStatus,
+      null,
+      null,
+      input.now,
+      input.now,
+    ),
+    ...artifactStatements,
+    prepareAuditInsert(
+      context.env,
+      createAuditEvent({
+        action: "carboti.processor.invoked",
+        actor: {
+          id: apiClientActorId(input.client),
+          kind: "system",
+        },
+        metadata: {
+          artifactCount: input.artifacts.length,
+          deliveryId: input.deliveryId,
+          inputObjectId: input.inputObject.id,
+          processorId: input.processorId,
+          processorRunId: input.processorRunId,
+        },
+        subject: {
+          id: input.messageId,
+          kind: "carboti_message",
+        },
+      }),
+    ),
+  ]);
+}
+
+async function recordProcessorFailure(
+  context: AppContext,
+  input: {
+    client: CarbotiApiClient;
+    deliveryId: string;
+    endpointId: string;
+    errorMessage: string;
+    inputObjectId: string;
+    messageId: string;
+    now: string;
+    processorId: string;
+    processorRunId: string;
+    responseStatus: number | null;
+  },
+): Promise<void> {
+  await context.env.DB.batch([
+    context.env.DB.prepare(
+      `
+        INSERT INTO carboti_processor_runs (
+          id,
+          workspace_id,
+          processor_id,
+          pipeline_id,
+          message_id,
+          status,
+          input_object_id,
+          output_artifact_count,
+          error_message,
+          started_at,
+          completed_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    ).bind(
+      input.processorRunId,
+      input.client.workspaceId,
+      input.processorId,
+      null,
+      input.messageId,
+      "failed",
+      input.inputObjectId,
+      0,
+      input.errorMessage.slice(0, 1000),
+      input.now,
+      input.now,
+    ),
+    context.env.DB.prepare(
+      `
+        INSERT INTO carboti_webhook_deliveries (
+          id,
+          endpoint_id,
+          event_type,
+          status,
+          attempt_count,
+          response_status,
+          error_message,
+          next_attempt_at,
+          delivered_at,
+          created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    ).bind(
+      input.deliveryId,
+      input.endpointId,
+      "processor.invoke",
+      "failed",
+      1,
+      input.responseStatus,
+      input.errorMessage.slice(0, 1000),
+      null,
+      null,
+      input.now,
+    ),
+  ]);
+}
+
+async function readProcessorResponse(response: Response): Promise<
+  | {
+      ok: true;
+      value: ExternalProcessorResponse;
+    }
+  | {
+      message: string;
+      ok: false;
+    }
+> {
+  const text = await readResponseTextLimited(response, 64_000);
+  if (!text) {
+    return {
+      message: "Processor response must not be empty.",
+      ok: false,
+    };
+  }
+
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return {
+      message: "Processor response must be valid JSON.",
+      ok: false,
+    };
+  }
+
+  const parsed = v.safeParse(ExternalProcessorResponseSchema, body);
+  if (!parsed.success) {
+    return {
+      message: parsed.issues[0]?.message ?? "Processor response is invalid.",
+      ok: false,
+    };
+  }
+
+  return {
+    ok: true,
+    value: parsed.output,
+  };
+}
+
+async function safeResponseText(response: Response): Promise<string> {
+  const text = await readResponseTextLimited(response, 1000);
+  return text || `HTTP ${response.status}`;
+}
+
+async function readResponseTextLimited(response: Response, limit: number): Promise<string> {
+  if (!response.body) return "";
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+
+  try {
+    while (received < limit) {
+      const result = await reader.read();
+      if (result.done) break;
+
+      const remaining = limit - received;
+      const chunk = result.value.slice(0, remaining);
+      chunks.push(chunk);
+      received += chunk.byteLength;
+
+      if (result.value.byteLength > remaining) {
+        await reader.cancel();
+        break;
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(received);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return new TextDecoder().decode(bytes);
+}
+
+async function hmacSha256Hex(secret: string, value: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    {
+      hash: "SHA-256",
+      name: "HMAC",
+    },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
+  return toHex(new Uint8Array(signature));
+}
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function parseProcessorConfig(value: string | null): {
+  signingSecret: string | null;
+} {
+  if (!value) return { signingSecret: null };
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "signingSecret" in parsed &&
+      typeof parsed.signingSecret === "string"
+    ) {
+      return { signingSecret: parsed.signingSecret };
+    }
+    return { signingSecret: null };
+  } catch {
+    return { signingSecret: null };
+  }
+}
+
+function parseDataJson(value: string | null): unknown {
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function artifactIdFor(messageId: string, processorRunId: string, index: number): string {
+  return `artifact:${messageId}:processor:${processorRunId}:${index + 1}`;
+}
+
+function endpointIdFor(processorId: string): string {
+  return `endpoint:${processorId}`;
+}
