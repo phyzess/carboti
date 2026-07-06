@@ -35,8 +35,8 @@ application seed. The inherited baseline already provides:
 6. Import jobs, human review, audit events, and AI advisory records.
 7. Verified local validation, integration, and browser smoke command paths.
 
-`carboti` adds product-specific contracts for sources, pipelines, artifacts,
-lineage, processors, webhooks, and API clients.
+`carboti` adds product-specific contracts for sources, connector manifests,
+sinks, pipelines, artifacts, lineage, processors, webhooks, and API clients.
 
 ## Core Concepts
 
@@ -72,7 +72,7 @@ Cloudflare is the reference runtime:
 3. R2 for raw `.eml`, attachments, and derived files.
 4. D1 for metadata, jobs, artifacts, lineage, and audit.
 5. Queues for asynchronous processing and DLQ-backed recovery.
-6. Workflows and Containers later for long-running OCR, document parsing, and hosted processors.
+6. Workflows and Containers as declared runtime targets for long-running OCR, document parsing, and hosted processors.
 
 ## Development
 
@@ -105,6 +105,18 @@ Developer-facing packages now include:
 @carboti/cli  Command surface for init, ingest, inspect, replay, and artifact export.
 ```
 
+Connector and runtime surfaces:
+
+```text
+GET  /api/carboti/connectors/manifests
+POST /api/carboti/connectors/sources
+POST /api/carboti/connectors/sources/:sourceId/health
+POST /api/carboti/connectors/sources/:sourceId/ingest
+POST /api/carboti/connectors/sinks
+GET  /api/carboti/processor-runtimes
+POST /api/carboti/processors/hosted
+```
+
 Agent-facing surfaces:
 
 ```text
@@ -122,8 +134,8 @@ POST /api/carboti/agent/messages/:messageId/context
 5. External processor webhook with HMAC signing, retry, and delivery logs.
 6. OpenAPI and `@carboti/sdk`.
 7. MCP server and agent-safe tools.
-8. Gmail, Microsoft Graph, IMAP, SES/Postmark/Mailgun, S3/R2 connector expansion.
-9. Hosted processor runtime with capability manifests and resource limits.
+8. Connector manifests, source/sink registration, health checks, and generic connector ingest for Gmail, Microsoft Graph, IMAP, SES/Postmark/Mailgun, and S3/R2 expansion.
+9. Hosted processor registration with capability manifests and resource limits.
 
 ## Repository Status
 

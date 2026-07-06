@@ -1,7 +1,11 @@
 import type {
   CarbotiArtifactKind,
+  CarbotiHostedProcessorResourceLimits,
+  CarbotiHostedProcessorRuntime,
   CarbotiOpenApiDocument,
   CarbotiProcessorCapabilityManifest,
+  CarbotiSinkKind,
+  CarbotiSourceKind,
 } from "@carboti/core";
 
 export type CarbotiClientOptions = {
@@ -42,8 +46,35 @@ export type CarbotiExternalProcessorInput = {
   token?: string | undefined;
 };
 
+export type CarbotiHostedProcessorInput = {
+  capabilityManifest?: CarbotiProcessorCapabilityManifest | undefined;
+  entrypoint?: string | undefined;
+  name: string;
+  resourceLimits?: Partial<CarbotiHostedProcessorResourceLimits> | undefined;
+  runtime?: CarbotiHostedProcessorRuntime | undefined;
+  token?: string | undefined;
+};
+
 export type CarbotiInvokeProcessorInput = {
   messageId: string;
+  token?: string | undefined;
+};
+
+export type CarbotiConnectorRegistrationInput<TKind extends string> = {
+  config?: Record<string, unknown> | undefined;
+  kind: TKind;
+  name: string;
+  status?: "active" | "disabled" | undefined;
+  token?: string | undefined;
+};
+
+export type CarbotiConnectorIngestInput = {
+  connectorMessageId?: string | undefined;
+  contentBase64?: string | undefined;
+  contentText?: string | undefined;
+  contentType: string;
+  filename: string;
+  metadata?: Record<string, unknown> | undefined;
   token?: string | undefined;
 };
 
@@ -104,6 +135,78 @@ export class CarbotiClient {
       method: "POST",
       token: input.token,
     });
+  }
+
+  listConnectorManifests(input: { token?: string | undefined } = {}): Promise<CarbotiApiResponse> {
+    return this.requestJson("/api/carboti/connectors/manifests", {
+      token: input.token,
+    });
+  }
+
+  registerConnectorSource(
+    input: CarbotiConnectorRegistrationInput<CarbotiSourceKind>,
+  ): Promise<CarbotiApiResponse> {
+    return this.requestJson("/api/carboti/connectors/sources", {
+      json: connectorRegistrationJson(input),
+      method: "POST",
+      token: input.token,
+    });
+  }
+
+  registerConnectorSink(
+    input: CarbotiConnectorRegistrationInput<CarbotiSinkKind>,
+  ): Promise<CarbotiApiResponse> {
+    return this.requestJson("/api/carboti/connectors/sinks", {
+      json: connectorRegistrationJson(input),
+      method: "POST",
+      token: input.token,
+    });
+  }
+
+  getConnectorSourceHealth(
+    sourceId: string,
+    input: { token?: string | undefined } = {},
+  ): Promise<CarbotiApiResponse> {
+    return this.requestJson(
+      `/api/carboti/connectors/sources/${encodePathSegment(sourceId)}/health`,
+      {
+        token: input.token,
+      },
+    );
+  }
+
+  checkConnectorSourceHealth(
+    sourceId: string,
+    input: { token?: string | undefined } = {},
+  ): Promise<CarbotiApiResponse> {
+    return this.requestJson(
+      `/api/carboti/connectors/sources/${encodePathSegment(sourceId)}/health`,
+      {
+        method: "POST",
+        token: input.token,
+      },
+    );
+  }
+
+  ingestConnectorObject(
+    sourceId: string,
+    input: CarbotiConnectorIngestInput,
+  ): Promise<CarbotiApiResponse> {
+    return this.requestJson(
+      `/api/carboti/connectors/sources/${encodePathSegment(sourceId)}/ingest`,
+      {
+        json: {
+          connectorMessageId: input.connectorMessageId,
+          contentBase64: input.contentBase64,
+          contentText: input.contentText,
+          contentType: input.contentType,
+          filename: input.filename,
+          metadata: input.metadata,
+        },
+        method: "POST",
+        token: input.token,
+      },
+    );
   }
 
   getObject(
@@ -182,6 +285,26 @@ export class CarbotiClient {
     });
   }
 
+  listProcessorRuntimes(input: { token?: string | undefined } = {}): Promise<CarbotiApiResponse> {
+    return this.requestJson("/api/carboti/processor-runtimes", {
+      token: input.token,
+    });
+  }
+
+  createHostedProcessor(input: CarbotiHostedProcessorInput): Promise<CarbotiApiResponse> {
+    return this.requestJson("/api/carboti/processors/hosted", {
+      json: {
+        capabilityManifest: input.capabilityManifest,
+        entrypoint: input.entrypoint,
+        name: input.name,
+        resourceLimits: input.resourceLimits,
+        runtime: input.runtime,
+      },
+      method: "POST",
+      token: input.token,
+    });
+  }
+
   invokeProcessor(
     processorId: string,
     input: CarbotiInvokeProcessorInput,
@@ -254,6 +377,17 @@ function resolveUrl(baseUrl: string, path: string): string {
 
 function encodePathSegment(value: string): string {
   return encodeURIComponent(value);
+}
+
+function connectorRegistrationJson<TKind extends string>(
+  input: CarbotiConnectorRegistrationInput<TKind>,
+): Record<string, unknown> {
+  return {
+    config: input.config,
+    kind: input.kind,
+    name: input.name,
+    status: input.status,
+  };
 }
 
 async function readJsonResponse(response: Response): Promise<unknown> {

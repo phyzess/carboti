@@ -31,6 +31,40 @@ export async function assertSdkInterfaces({ assert, cli, sdk }) {
     "sdk must send authenticated HTTP ingest requests with Carboti headers.",
   );
 
+  await client.listConnectorManifests();
+  await client.registerConnectorSource({
+    config: {
+      bucket: "incoming",
+    },
+    kind: "r2",
+    name: "Incoming R2",
+  });
+  await client.ingestConnectorObject("source:r2:example", {
+    contentText: "hello",
+    contentType: "text/plain",
+    filename: "hello.txt",
+  });
+  await client.createHostedProcessor({
+    name: "Hosted processor",
+    resourceLimits: {
+      timeoutSeconds: 30,
+    },
+    runtime: "cloudflare_workers",
+  });
+
+  assert(
+    requests[1]?.url === "https://carboti.example.test/api/carboti/connectors/manifests" &&
+      requests[1]?.init?.method === "GET" &&
+      requests[2]?.url === "https://carboti.example.test/api/carboti/connectors/sources" &&
+      requests[2]?.init?.method === "POST" &&
+      requests[3]?.url ===
+        "https://carboti.example.test/api/carboti/connectors/sources/source%3Ar2%3Aexample/ingest" &&
+      requests[3]?.init?.method === "POST" &&
+      requests[4]?.url === "https://carboti.example.test/api/carboti/processors/hosted" &&
+      requests[4]?.init?.method === "POST",
+    "sdk must expose connector and hosted processor API helpers.",
+  );
+
   const failingClient = new sdk.CarbotiClient({
     baseUrl: "https://carboti.example.test",
     fetch: async () =>

@@ -14,6 +14,9 @@ export const carbotiOpenApiDocument = {
       name: "Ingest",
     },
     {
+      name: "Connectors",
+    },
+    {
       name: "Evidence",
     },
     {
@@ -122,6 +125,69 @@ export const carbotiOpenApiDocument = {
               type: "string",
             },
             type: "array",
+          },
+        },
+        type: "object",
+      },
+      ConnectorManifest: {
+        additionalProperties: true,
+        properties: {
+          authModes: {
+            items: {
+              enum: ["none", "api_key", "basic", "oauth2", "aws_iam", "cloudflare_binding"],
+              type: "string",
+            },
+            type: "array",
+          },
+          capabilities: {
+            items: {
+              enum: [
+                "webhook_ingest",
+                "polling_ingest",
+                "push_object",
+                "pull_object",
+                "artifact_sink",
+                "health_check",
+              ],
+              type: "string",
+            },
+            type: "array",
+          },
+          direction: {
+            enum: ["source", "sink", "source_sink"],
+            type: "string",
+          },
+          displayName: {
+            type: "string",
+          },
+          kind: {
+            type: "string",
+          },
+        },
+        required: ["kind", "displayName", "direction", "capabilities", "authModes"],
+        type: "object",
+      },
+      HostedProcessorResourceLimits: {
+        additionalProperties: false,
+        properties: {
+          cpuMs: {
+            type: "number",
+          },
+          maxInputBytes: {
+            type: "number",
+          },
+          maxOutputBytes: {
+            type: "number",
+          },
+          memoryMb: {
+            type: "number",
+          },
+          networkPolicy: {
+            enum: ["egress_disabled", "egress_allowlist", "egress_any"],
+            type: "string",
+          },
+          timeoutSeconds: {
+            type: "number",
           },
         },
         type: "object",
@@ -256,6 +322,220 @@ export const carbotiOpenApiDocument = {
           },
         ],
         tags: ["Ingest"],
+      },
+    },
+    "/api/carboti/connectors/manifests": {
+      get: {
+        operationId: "listConnectorManifests",
+        responses: {
+          "200": {
+            description: "Built-in connector manifests for source and sink adapters.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Connectors"],
+      },
+    },
+    "/api/carboti/connectors/sources": {
+      post: {
+        operationId: "registerConnectorSource",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                additionalProperties: false,
+                properties: {
+                  config: {
+                    additionalProperties: true,
+                    type: "object",
+                  },
+                  kind: {
+                    type: "string",
+                  },
+                  name: {
+                    type: "string",
+                  },
+                  status: {
+                    enum: ["active", "disabled"],
+                    type: "string",
+                  },
+                },
+                required: ["kind", "name"],
+                type: "object",
+              },
+            },
+          },
+          required: true,
+        },
+        responses: {
+          "201": {
+            description: "Connector source registered with non-secret configuration.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Connectors"],
+      },
+    },
+    "/api/carboti/connectors/sinks": {
+      post: {
+        operationId: "registerConnectorSink",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                additionalProperties: false,
+                properties: {
+                  config: {
+                    additionalProperties: true,
+                    type: "object",
+                  },
+                  kind: {
+                    enum: ["r2", "s3", "api_pull", "webhook", "download", "queue"],
+                    type: "string",
+                  },
+                  name: {
+                    type: "string",
+                  },
+                  status: {
+                    enum: ["active", "disabled"],
+                    type: "string",
+                  },
+                },
+                required: ["kind", "name"],
+                type: "object",
+              },
+            },
+          },
+          required: true,
+        },
+        responses: {
+          "201": {
+            description: "Connector sink registered with non-secret configuration.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Connectors"],
+      },
+    },
+    "/api/carboti/connectors/sources/{sourceId}/health": {
+      get: {
+        operationId: "getConnectorSourceHealth",
+        parameters: [
+          {
+            in: "path",
+            name: "sourceId",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Latest connector health status.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Connectors"],
+      },
+      post: {
+        operationId: "checkConnectorSourceHealth",
+        parameters: [
+          {
+            in: "path",
+            name: "sourceId",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "201": {
+            description: "Connector health check recorded.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Connectors"],
+      },
+    },
+    "/api/carboti/connectors/sources/{sourceId}/ingest": {
+      post: {
+        operationId: "ingestConnectorObject",
+        parameters: [
+          {
+            in: "path",
+            name: "sourceId",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                additionalProperties: false,
+                properties: {
+                  contentBase64: {
+                    type: "string",
+                  },
+                  contentText: {
+                    type: "string",
+                  },
+                  contentType: {
+                    type: "string",
+                  },
+                  connectorMessageId: {
+                    type: "string",
+                  },
+                  filename: {
+                    type: "string",
+                  },
+                  metadata: {
+                    additionalProperties: true,
+                    type: "object",
+                  },
+                },
+                required: ["contentType", "filename"],
+                type: "object",
+              },
+            },
+          },
+          required: true,
+        },
+        responses: {
+          "202": {
+            description: "Connector object accepted into the raw/object/artifact/lineage model.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Connectors"],
       },
     },
     "/api/carboti/objects/{objectId}": {
@@ -436,6 +716,22 @@ export const carbotiOpenApiDocument = {
         tags: ["Replay"],
       },
     },
+    "/api/carboti/processor-runtimes": {
+      get: {
+        operationId: "listHostedProcessorRuntimes",
+        responses: {
+          "200": {
+            description: "Hosted processor runtime options and resource boundaries.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Processors"],
+      },
+    },
     "/api/carboti/processors/external": {
       post: {
         operationId: "createExternalProcessor",
@@ -476,6 +772,57 @@ export const carbotiOpenApiDocument = {
         responses: {
           "201": {
             description: "External processor created.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Processors"],
+      },
+    },
+    "/api/carboti/processors/hosted": {
+      post: {
+        operationId: "createHostedProcessor",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                additionalProperties: false,
+                properties: {
+                  capabilityManifest: {
+                    $ref: "#/components/schemas/CapabilityManifest",
+                  },
+                  entrypoint: {
+                    type: "string",
+                  },
+                  name: {
+                    type: "string",
+                  },
+                  resourceLimits: {
+                    $ref: "#/components/schemas/HostedProcessorResourceLimits",
+                  },
+                  runtime: {
+                    enum: [
+                      "cloudflare_workers",
+                      "cloudflare_workflows",
+                      "cloudflare_containers",
+                      "external_sandbox",
+                    ],
+                    type: "string",
+                  },
+                },
+                required: ["name"],
+                type: "object",
+              },
+            },
+          },
+          required: true,
+        },
+        responses: {
+          "201": {
+            description: "Hosted processor registered with capability and resource limits.",
           },
         },
         security: [

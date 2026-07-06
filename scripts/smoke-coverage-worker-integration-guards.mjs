@@ -13,15 +13,24 @@ export function assertWorkerIntegrationCoverageGuards(context) {
       workerIntegration.includes("/api/source-files") &&
       workerIntegration.includes("/api/carboti/openapi.json") &&
       workerIntegration.includes("/api/carboti/ingest/http") &&
+      workerIntegration.includes("/api/carboti/connectors/manifests") &&
+      workerIntegration.includes("/api/carboti/connectors/sources") &&
+      workerIntegration.includes("/api/carboti/connectors/sinks") &&
+      workerIntegration.includes("connector_secret_inline_not_allowed") &&
+      workerIntegration.includes("raw-connectors/r2/") &&
       workerIntegration.includes("/api/carboti/agent/artifacts/search") &&
       workerIntegration.includes("/api/carboti/mcp") &&
       workerIntegration.includes("/api/carboti/messages/") &&
       workerIntegration.includes("not_a_real_artifact") &&
       workerIntegration.includes("external.ledger.summary.v1") &&
+      workerIntegration.includes("/api/carboti/processor-runtimes") &&
       workerIntegration.includes("/api/carboti/processors/external") &&
+      workerIntegration.includes("/api/carboti/processors/hosted") &&
       workerIntegration.includes("/api/carboti/processor-deliveries/") &&
       workerIntegration.includes("x-carboti-signature") &&
       workerIntegration.includes("capabilityManifest") &&
+      workerIntegration.includes("egress_allowlist") &&
+      workerIntegration.includes("Hosted ledger extractor") &&
       workerIntegration.includes("processor_capability_violation") &&
       workerIntegration.includes("agent_context_bundle") &&
       workerIntegration.includes("carboti.retrieve_context") &&

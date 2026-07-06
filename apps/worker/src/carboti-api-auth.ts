@@ -9,7 +9,10 @@ export type CarbotiApiScope =
   | "artifacts:write"
   | "lineage:read"
   | "processors:invoke"
+  | "processors:read"
   | "processors:write"
+  | "connectors:read"
+  | "connectors:write"
   | "replay:write"
   | "agent:read";
 

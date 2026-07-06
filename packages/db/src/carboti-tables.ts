@@ -30,6 +30,21 @@ export const carbotiPipelines = sqliteTable(
   (table) => [index("carboti_pipelines_source_idx").on(table.sourceId, table.status)],
 );
 
+export const carbotiSinks = sqliteTable(
+  "carboti_sinks",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    kind: text("kind").notNull(),
+    name: text("name").notNull(),
+    status: text("status").notNull(),
+    configJson: text("config_json"),
+    createdAt: text("created_at").notNull(),
+    updatedAt: text("updated_at").notNull(),
+  },
+  (table) => [index("carboti_sinks_workspace_kind_idx").on(table.workspaceId, table.kind)],
+);
+
 export const carbotiProcessorConfigs = sqliteTable(
   "carboti_processor_configs",
   {
@@ -88,6 +103,27 @@ export const carbotiSecretRefs = sqliteTable(
       table.workspaceId,
       table.kind,
       table.createdAt,
+    ),
+  ],
+);
+
+export const carbotiConnectorHealthChecks = sqliteTable(
+  "carboti_connector_health_checks",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    sourceId: text("source_id").notNull(),
+    connectorKind: text("connector_kind").notNull(),
+    status: text("status").notNull(),
+    checkedAt: text("checked_at").notNull(),
+    detailsJson: text("details_json"),
+  },
+  (table) => [
+    index("carboti_connector_health_checks_source_checked_idx").on(table.sourceId, table.checkedAt),
+    index("carboti_connector_health_checks_workspace_status_idx").on(
+      table.workspaceId,
+      table.status,
+      table.checkedAt,
     ),
   ],
 );

@@ -24,10 +24,16 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
     openApi.paths["/api/carboti/ingest/http"].post.operationId === "ingestHttpObject" &&
       openApi.paths["/api/carboti/processors/external"].post.operationId ===
         "createExternalProcessor" &&
+      openApi.paths["/api/carboti/processors/hosted"].post.operationId ===
+        "createHostedProcessor" &&
+      openApi.paths["/api/carboti/connectors/manifests"].get.operationId ===
+        "listConnectorManifests" &&
+      openApi.paths["/api/carboti/connectors/sources/{sourceId}/ingest"].post.operationId ===
+        "ingestConnectorObject" &&
       openApi.paths["/api/carboti/processor-deliveries/{deliveryId}/retry"].post.operationId ===
         "retryProcessorDelivery" &&
       openApi.paths["/api/carboti/mcp"].post.operationId === "carbotiMcp",
-    "Carboti OpenAPI covers ingest, external processor, retry, and MCP routes",
+    "Carboti OpenAPI covers ingest, connector, processor, retry, and MCP routes",
   );
 
   await expectApiError(
@@ -42,6 +48,250 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
   );
 
   await seedApiClient(env);
+
+  const connectorManifests = await client.json("/api/carboti/connectors/manifests", {
+    headers: apiHeaders,
+  });
+  const connectorKinds = connectorManifests.manifests.map((manifest) => manifest.kind).sort();
+  for (const expectedKind of [
+    "gmail",
+    "imap",
+    "mailgun",
+    "microsoft_graph",
+    "postmark",
+    "r2",
+    "s3",
+    "ses",
+  ]) {
+    assert(
+      connectorKinds.includes(expectedKind),
+      `connector manifest registry includes ${expectedKind}`,
+    );
+  }
+  assert(
+    connectorManifests.manifests.find((manifest) => manifest.kind === "r2").direction ===
+      "source_sink",
+    "R2 connector is declared as both source and sink capable",
+  );
+
+  await expectApiError(
+    await client.post(
+      "/api/carboti/connectors/sources",
+      JSON.stringify({
+        config: {
+          accessToken: "must-not-be-inline",
+        },
+        kind: "gmail",
+        name: "Gmail with inline token",
+      }),
+      {
+        headers: {
+          ...apiHeaders,
+          "content-type": "application/json",
+        },
+      },
+    ),
+    400,
+    "connector_secret_inline_not_allowed",
+  );
+
+  const connectorSourceResponse = await client.post(
+    "/api/carboti/connectors/sources",
+    JSON.stringify({
+      config: {
+        bucket: "incoming-documents",
+        prefix: "raw/",
+      },
+      kind: "r2",
+      name: "Incoming R2 bucket",
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(connectorSourceResponse, 201);
+  const connectorSource = await connectorSourceResponse.json();
+  assert(
+    connectorSource.source.kind === "r2" && connectorSource.source.id.startsWith("source:r2:"),
+    "R2 connector source registration succeeds",
+  );
+
+  const connectorSinkResponse = await client.post(
+    "/api/carboti/connectors/sinks",
+    JSON.stringify({
+      config: {
+        bucket: "processed-archive",
+        prefix: "artifacts/",
+      },
+      kind: "s3",
+      name: "S3 artifact archive",
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(connectorSinkResponse, 201);
+  const connectorSink = await connectorSinkResponse.json();
+  assert(
+    connectorSink.sink.kind === "s3" && connectorSink.manifest.direction === "source_sink",
+    "S3 connector sink registration succeeds",
+  );
+
+  const connectorHealthResponse = await client.post(
+    `/api/carboti/connectors/sources/${connectorSource.source.id}/health`,
+    "",
+    {
+      headers: apiHeaders,
+    },
+  );
+  await expectStatus(connectorHealthResponse, 201);
+  const connectorHealth = await connectorHealthResponse.json();
+  assert(
+    connectorHealth.health.status === "healthy" &&
+      connectorHealth.health.details.checks.some((check) => check.name === "remote_probe"),
+    "connector health check records operational status without requiring inline secrets",
+  );
+
+  const connectorHealthRead = await client.json(
+    `/api/carboti/connectors/sources/${connectorSource.source.id}/health`,
+    {
+      headers: apiHeaders,
+    },
+  );
+  assert(
+    connectorHealthRead.health.status === "healthy",
+    "connector health read returns the latest recorded check",
+  );
+
+  const connectorIngestResponse = await client.post(
+    `/api/carboti/connectors/sources/${connectorSource.source.id}/ingest`,
+    JSON.stringify({
+      connectorMessageId: "r2://incoming-documents/raw/ledger.csv",
+      contentText: "label,value\nConnector,99\n",
+      contentType: "text/csv",
+      filename: "ledger.csv",
+      metadata: {
+        objectKey: "raw/ledger.csv",
+      },
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(connectorIngestResponse, 202);
+  const connectorIngest = await connectorIngestResponse.json();
+  assert(
+    connectorIngest.rawObject.objectKey.startsWith("raw-connectors/r2/"),
+    "connector ingest stores raw objects under connector-specific R2 keys",
+  );
+  assert(
+    env.SOURCE_FILES.has(connectorIngest.rawObject.objectKey),
+    "connector ingest preserves the raw object in R2",
+  );
+
+  const connectorArtifacts = await client.json(
+    `/api/carboti/messages/${connectorIngest.messageId}/artifacts`,
+    {
+      headers: apiHeaders,
+    },
+  );
+  assert(
+    connectorArtifacts.artifacts
+      .map((artifact) => artifact.kind)
+      .sort()
+      .join(",") === "message_text,normalized_json",
+    "connector ingest creates the same normalized JSON and text artifacts as HTTP ingest",
+  );
+  const connectorNormalized = connectorArtifacts.artifacts.find(
+    (artifact) => artifact.kind === "normalized_json",
+  );
+  const connectorNormalizedDetail = await client.json(
+    `/api/carboti/artifacts/${connectorNormalized.id}`,
+    {
+      headers: apiHeaders,
+    },
+  );
+  assert(
+    connectorNormalizedDetail.artifact.data.metadata.connector.kind === "r2" &&
+      connectorNormalizedDetail.artifact.data.rawObjectRef.objectKey ===
+        connectorIngest.rawObject.objectKey,
+    "connector normalized artifact links source metadata to the preserved raw object",
+  );
+
+  const connectorLineage = await client.json(
+    `/api/carboti/messages/${connectorIngest.messageId}/lineage`,
+    {
+      headers: apiHeaders,
+    },
+  );
+  assert(
+    connectorLineage.edges
+      .map((edge) => edge.relation)
+      .sort()
+      .join(",") === "normalized_to,processed_into,processed_into",
+    "connector ingest records raw-to-normalized and normalized-to-artifact lineage",
+  );
+
+  const processorRuntimes = await client.json("/api/carboti/processor-runtimes", {
+    headers: apiHeaders,
+  });
+  assert(
+    processorRuntimes.runtimes.some(
+      (runtime) =>
+        runtime.runtime === "cloudflare_workers" &&
+        runtime.maxResourceLimits.networkPolicy === "egress_allowlist",
+    ),
+    "hosted processor runtime discovery exposes Cloudflare resource boundaries",
+  );
+
+  const hostedProcessorResponse = await client.post(
+    "/api/carboti/processors/hosted",
+    JSON.stringify({
+      capabilityManifest: {
+        inputArtifactKinds: ["normalized_json"],
+        inputObjectKinds: ["normalized_message"],
+        outputArtifactKinds: ["processor_output"],
+        permissions: ["read:message", "read:artifacts", "write:artifacts"],
+      },
+      entrypoint: "processors/extract-ledger.ts",
+      name: "Hosted ledger extractor",
+      resourceLimits: {
+        cpuMs: 999999,
+        maxInputBytes: 999999999,
+        maxOutputBytes: 999999999,
+        memoryMb: 9999,
+        networkPolicy: "egress_any",
+        timeoutSeconds: 999,
+      },
+      runtime: "cloudflare_workers",
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(hostedProcessorResponse, 201);
+  const hostedProcessor = await hostedProcessorResponse.json();
+  assert(
+    hostedProcessor.kind === "hosted" &&
+      hostedProcessor.resourceLimits.timeoutSeconds === 300 &&
+      hostedProcessor.resourceLimits.cpuMs === 300000 &&
+      hostedProcessor.resourceLimits.maxInputBytes === 10000000 &&
+      hostedProcessor.resourceLimits.memoryMb === 128 &&
+      hostedProcessor.resourceLimits.networkPolicy === "egress_allowlist",
+    "hosted processor registration clamps requested limits to runtime boundaries",
+  );
 
   const ingestResponse = await client.post(
     "/api/carboti/ingest/http",
@@ -776,7 +1026,10 @@ async function seedApiClient(env) {
         "artifacts:read",
         "artifacts:write",
         "lineage:read",
+        "connectors:read",
+        "connectors:write",
         "processors:invoke",
+        "processors:read",
         "processors:write",
         "replay:write",
         "agent:read",

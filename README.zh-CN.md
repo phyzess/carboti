@@ -28,7 +28,7 @@ English version: [README.md](./README.md)
 6. Import jobs、人工 review、audit events 和 AI advisory records。
 7. 本地 validate、integration 和 browser smoke 的命令路径。
 
-`carboti` 在此基础上新增产品契约：source、pipeline、artifact、lineage、processor、webhook endpoint、webhook delivery 和 API client。
+`carboti` 在此基础上新增产品契约：source、pipeline、artifact、lineage、processor、webhook endpoint、webhook delivery、connector manifest、sink 和 API client。
 
 ## 核心概念
 
@@ -64,7 +64,7 @@ Cloudflare 是默认参考运行时：
 3. R2 保存 `.eml`、附件和派生产物。
 4. D1 保存 metadata、jobs、artifacts、lineage 和 audit。
 5. Queues 承载异步处理与 DLQ 恢复。
-6. Workflows 和 Containers 后续用于长任务 OCR、文档解析和托管 processor。
+6. Workflows 和 Containers 作为长任务 OCR、文档解析和托管 processor 的声明式 runtime target。
 
 ## 开发
 
@@ -97,6 +97,18 @@ GET /api/carboti/openapi.json
 @carboti/cli  init、ingest、inspect、replay、artifact export 命令表面。
 ```
 
+面向 connector 和 runtime 的入口：
+
+```text
+GET  /api/carboti/connectors/manifests
+POST /api/carboti/connectors/sources
+POST /api/carboti/connectors/sources/:sourceId/health
+POST /api/carboti/connectors/sources/:sourceId/ingest
+POST /api/carboti/connectors/sinks
+GET  /api/carboti/processor-runtimes
+POST /api/carboti/processors/hosted
+```
+
 面向 agent 的入口：
 
 ```text
@@ -114,8 +126,8 @@ POST /api/carboti/agent/messages/:messageId/context
 5. 增加外部 processor webhook，包含 HMAC signing、retry 和 delivery logs。
 6. 提供 OpenAPI 与 `@carboti/sdk`。
 7. 提供 MCP server 与 agent-safe tools。
-8. 扩展 Gmail、Microsoft Graph、IMAP、SES/Postmark/Mailgun、S3/R2 connectors。
-9. 增加带 capability manifest 和资源限制的 hosted processor runtime。
+8. 为 Gmail、Microsoft Graph、IMAP、SES/Postmark/Mailgun、S3/R2 扩展提供 connector manifests、source/sink registration、health checks 和 generic connector ingest。
+9. 增加带 capability manifest 和资源限制的 hosted processor registration。
 
 ## 当前状态
 

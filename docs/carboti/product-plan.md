@@ -203,9 +203,13 @@ The first product slice is:
 
 ### Phase 6: Connectors and Hosted Processors
 
-1. Gmail.
-2. Microsoft Graph.
-3. IMAP.
-4. SES/Postmark/Mailgun inbound webhooks.
-5. Hosted processor runtime.
-6. Sandboxing for hosted processors.
+1. Add built-in connector manifests for Gmail, Microsoft Graph, IMAP,
+   SES/Postmark/Mailgun, S3, and R2.
+2. Add source and sink registration that stores non-secret connector config.
+3. Add connector health checks and audit events.
+4. Add generic connector ingest that maps source-specific payloads into Source,
+   Raw Object, normalized Message, Artifact, and Lineage records.
+5. Add hosted processor registration with capability manifests and clamped
+   resource limits.
+6. Explore execution backends for hosted processors through Workers, Workflows,
+   Containers, or external sandboxes before running tenant code.

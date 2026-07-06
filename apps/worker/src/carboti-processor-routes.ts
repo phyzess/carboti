@@ -1,10 +1,16 @@
 import { createAuditEvent } from "@carboti/audit";
 import {
   CarbotiArtifactKindSchema,
+  CarbotiHostedProcessorResourceLimitsSchema,
+  CarbotiHostedProcessorRuntimeSchema,
   CarbotiObjectKindSchema,
   CarbotiProcessorCapabilityManifestSchema,
+  carbotiHostedProcessorRuntimeManifests,
+  getCarbotiHostedProcessorRuntimeManifest,
+  normalizeCarbotiHostedProcessorResourceLimits,
   normalizeCarbotiProcessorCapabilityManifest,
   type CarbotiProcessorCapabilityManifest,
+  type CarbotiHostedProcessorRuntime,
 } from "@carboti/core";
 import type { Hono } from "hono";
 import * as v from "valibot";
@@ -29,6 +35,14 @@ const CreateExternalProcessorInputSchema = v.object({
   timeoutSeconds: v.optional(v.number()),
 });
 
+const CreateHostedProcessorInputSchema = v.object({
+  capabilityManifest: v.optional(CarbotiProcessorCapabilityManifestSchema),
+  entrypoint: v.optional(v.string()),
+  name: v.string(),
+  resourceLimits: v.optional(CarbotiHostedProcessorResourceLimitsSchema),
+  runtime: v.optional(CarbotiHostedProcessorRuntimeSchema),
+});
+
 const InvokeExternalProcessorInputSchema = v.object({
   messageId: v.string(),
 });
@@ -45,6 +59,7 @@ const ExternalProcessorResponseSchema = v.object({
 });
 
 type CreateExternalProcessorInput = v.InferOutput<typeof CreateExternalProcessorInputSchema>;
+type CreateHostedProcessorInput = v.InferOutput<typeof CreateHostedProcessorInputSchema>;
 type ExternalProcessorArtifact = v.InferOutput<typeof ExternalProcessorArtifactSchema>;
 type ExternalProcessorResponse = v.InferOutput<typeof ExternalProcessorResponseSchema>;
 
@@ -83,6 +98,15 @@ type ProcessorDeliveryRow = {
 type ProcessorSecretRow = CarbotiEncryptedSecret;
 
 export function registerCarbotiProcessorRoutes(app: Hono<{ Bindings: Env }>): void {
+  app.get("/api/carboti/processor-runtimes", async (context) => {
+    const auth = await requireCarbotiApiClient(context, "processors:read");
+    if (!auth.ok) return auth.response;
+
+    return context.json({
+      runtimes: carbotiHostedProcessorRuntimeManifests,
+    });
+  });
+
   app.post("/api/carboti/processors/external", async (context) => {
     const auth = await requireCarbotiApiClient(context, "processors:write");
     if (!auth.ok) return auth.response;
@@ -91,6 +115,19 @@ export function registerCarbotiProcessorRoutes(app: Hono<{ Bindings: Env }>): vo
     if (!parsed.ok) return parsed.response;
 
     return createExternalProcessor(context, {
+      client: auth.client,
+      input: parsed.value,
+    });
+  });
+
+  app.post("/api/carboti/processors/hosted", async (context) => {
+    const auth = await requireCarbotiApiClient(context, "processors:write");
+    if (!auth.ok) return auth.response;
+
+    const parsed = await parseRequestJson(context, CreateHostedProcessorInputSchema);
+    if (!parsed.ok) return parsed.response;
+
+    return createHostedProcessor(context, {
       client: auth.client,
       input: parsed.value,
     });
@@ -119,6 +156,98 @@ export function registerCarbotiProcessorRoutes(app: Hono<{ Bindings: Env }>): vo
       deliveryId: context.req.param("deliveryId"),
     });
   });
+}
+
+async function createHostedProcessor(
+  context: AppContext,
+  input: {
+    client: CarbotiApiClient;
+    input: CreateHostedProcessorInput;
+  },
+): Promise<Response> {
+  const now = new Date().toISOString();
+  const runtime: CarbotiHostedProcessorRuntime = input.input.runtime ?? "cloudflare_workers";
+  const runtimeManifest = getCarbotiHostedProcessorRuntimeManifest(runtime);
+  const resourceLimits = normalizeCarbotiHostedProcessorResourceLimits(
+    input.input.resourceLimits ?? {},
+    runtime,
+  );
+  const capabilityManifest = normalizeCarbotiProcessorCapabilityManifest(
+    input.input.capabilityManifest,
+  );
+  const processorId = `processor:hosted:${crypto.randomUUID()}`;
+
+  await context.env.DB.batch([
+    context.env.DB.prepare(
+      `
+        INSERT INTO carboti_processor_configs (
+          id,
+          workspace_id,
+          kind,
+          name,
+          endpoint_url,
+          timeout_seconds,
+          status,
+          config_json,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    ).bind(
+      processorId,
+      input.client.workspaceId,
+      "hosted",
+      input.input.name,
+      null,
+      resourceLimits.timeoutSeconds,
+      "active",
+      JSON.stringify({
+        apiClientId: input.client.id,
+        capabilityManifest,
+        entrypoint: input.input.entrypoint ?? null,
+        resourceLimits,
+        runtime,
+        runtimeIsolation: runtimeManifest.isolation,
+        runtimeManifestVersion: "2026-07-06",
+      }),
+      now,
+      now,
+    ),
+    prepareAuditInsert(
+      context.env,
+      createAuditEvent({
+        action: "carboti.processor.hosted.created",
+        actor: {
+          id: apiClientActorId(input.client),
+          kind: "system",
+        },
+        metadata: {
+          capabilityManifest,
+          resourceLimits,
+          runtime,
+          runtimeIsolation: runtimeManifest.isolation,
+        },
+        subject: {
+          id: processorId,
+          kind: "carboti_processor",
+        },
+      }),
+    ),
+  ]);
+
+  return context.json(
+    {
+      capabilityManifest,
+      kind: "hosted",
+      processorId,
+      resourceLimits,
+      runtime,
+      runtimeManifest,
+      status: "active",
+    },
+    201,
+  );
 }
 
 async function createExternalProcessor(
