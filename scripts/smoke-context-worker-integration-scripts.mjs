@@ -10,6 +10,7 @@ export function createWorkerIntegrationScriptsContext({ text }) {
     text("scripts/worker-integration-http.mjs"),
     text("scripts/worker-integration-http-assertions.mjs"),
     text("scripts/worker-integration-http-cookies.mjs"),
+    text("scripts/worker-integration-carboti-api.mjs"),
     text("scripts/worker-integration-inbound-email.mjs"),
     text("scripts/worker-integration-inbound-email-fixture.mjs"),
     text("scripts/worker-integration-inbound-email-message.mjs"),

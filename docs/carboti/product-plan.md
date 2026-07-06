@@ -168,12 +168,13 @@ The first product slice is:
 3. Add contract endpoint.
 4. Add product plan documentation.
 
-### Phase 2: Artifacts and Lineage
+### Phase 2: Public Ingest and Evidence APIs
 
 1. Write normalized message artifacts from inbound email.
 2. Persist lineage edges.
-3. Add artifact list/detail routes.
-4. Add replay records.
+3. Add raw-first HTTP ingest for provisioned API clients.
+4. Add object, artifact, and lineage read routes.
+5. Add replay records from preserved raw objects.
 
 ### Phase 3: External Processors
 

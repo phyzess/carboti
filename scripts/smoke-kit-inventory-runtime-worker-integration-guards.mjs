@@ -10,6 +10,7 @@ export function assertRuntimeWorkerIntegrationInventoryGuards(context) {
     "scripts/worker-integration-http.mjs",
     "scripts/worker-integration-http-assertions.mjs",
     "scripts/worker-integration-http-cookies.mjs",
+    "scripts/worker-integration-carboti-api.mjs",
     "scripts/worker-integration-inbound-email.mjs",
     "scripts/worker-integration-inbound-email-fixture.mjs",
     "scripts/worker-integration-inbound-email-message.mjs",

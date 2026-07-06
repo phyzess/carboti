@@ -42,6 +42,19 @@ export function assertPackageAppContractGuards(context) {
     "worker must support business-neutral inbound email intake into raw R2, source files, and import jobs.",
   );
   assert(
+    workerSources.includes("requireCarbotiApiClient") &&
+      workerSources.includes('app.post("/api/carboti/ingest/http"') &&
+      workerSources.includes('app.get("/api/carboti/objects/:objectId"') &&
+      workerSources.includes('app.get("/api/carboti/artifacts/:artifactId"') &&
+      workerSources.includes('app.get("/api/carboti/messages/:messageId/lineage"') &&
+      workerSources.includes('app.post("/api/carboti/messages/:messageId/replay"') &&
+      workerSources.includes("carboti_api_clients") &&
+      workerSources.includes("carboti_processor_runs") &&
+      workerSources.includes("carbotiRawHttpObjectKey") &&
+      workerSources.includes("processor_output"),
+    "worker must expose token-scoped Carboti HTTP ingest, evidence read, and replay APIs.",
+  );
+  assert(
     webSources.includes("VITE_QITU_DEFAULT_LOCALE") &&
       webSources.includes("qitu.locale") &&
       !i18nPackage.includes("VITE_QITU_DEFAULT_LOCALE"),

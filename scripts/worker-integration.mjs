@@ -4,6 +4,7 @@ import { pathToFileURL } from "node:url";
 import process from "node:process";
 import { createTestEnv } from "./worker-integration-env.mjs";
 import { createClient } from "./worker-integration-http.mjs";
+import { testCarbotiHttpIngestAndReplay } from "./worker-integration-carboti-api.mjs";
 import { testInboundEmailIntake } from "./worker-integration-inbound-email.mjs";
 import { testAuditFilters } from "./worker-integration-audit.mjs";
 import { testAuthBootstrapAndMembers } from "./worker-integration-auth.mjs";
@@ -22,6 +23,7 @@ const aliases = [
   "auth",
   "charts",
   "config",
+  "core",
   "db",
   "design-system",
   "email",
@@ -60,6 +62,7 @@ async function main() {
 
     const { upload } = await testImportReviewWorkflow({ client, env, worker });
     await testAuditFilters({ client, loginAfterReset, upload });
+    await testCarbotiHttpIngestAndReplay({ client, env });
 
     console.log("Worker integration passed.");
   } finally {

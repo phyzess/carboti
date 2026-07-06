@@ -216,3 +216,12 @@ export function parseCarbotiMessageEnvelope(input: unknown): CarbotiMessageEnvel
 export function carbotiRawEmailObjectKey(input: { receivedAt: string; messageId: string }): string {
   return `raw-emails/${input.receivedAt.slice(0, 10)}/${input.messageId}.eml`;
 }
+
+export function carbotiRawHttpObjectKey(input: {
+  filename: string;
+  messageId: string;
+  receivedAt: string;
+}): string {
+  const safeFilename = input.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  return `raw-http/${input.receivedAt.slice(0, 10)}/${input.messageId}/${safeFilename}`;
+}

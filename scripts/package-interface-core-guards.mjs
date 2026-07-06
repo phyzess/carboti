@@ -14,6 +14,15 @@ export function assertCoreInterfaces({ assert, core, db }) {
     rawKey === "raw-emails/2026-07-06/msg-1.eml",
     "core must own raw email object key conventions.",
   );
+  const rawHttpKey = core.carbotiRawHttpObjectKey({
+    filename: "external ledger.csv",
+    messageId: "msg-2",
+    receivedAt: "2026-07-06T10:30:00.000Z",
+  });
+  assert(
+    rawHttpKey === "raw-http/2026-07-06/msg-2/external_ledger.csv",
+    "core must own raw HTTP object key conventions.",
+  );
 
   const parsed = core.parseCarbotiMessageEnvelope({
     attachments: [],
