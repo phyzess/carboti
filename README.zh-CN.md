@@ -90,6 +90,13 @@ GET /api/carboti/contract
 GET /api/carboti/openapi.json
 ```
 
+面向开发者的 package：
+
+```text
+@carboti/sdk  Fetch-compatible TypeScript client.
+@carboti/cli  init、ingest、inspect、replay、artifact export 命令表面。
+```
+
 ## 路线图
 
 1. 完成 `carboti` identity 与 qitu adoption baseline。

@@ -98,6 +98,13 @@ GET /api/carboti/contract
 GET /api/carboti/openapi.json
 ```
 
+Developer-facing packages now include:
+
+```text
+@carboti/sdk  Fetch-compatible TypeScript client.
+@carboti/cli  Command surface for init, ingest, inspect, replay, and artifact export.
+```
+
 ## Roadmap
 
 1. `carboti` identity and qitu adoption baseline.

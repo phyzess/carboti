@@ -20,6 +20,7 @@ export async function createPackageInterfaceRuntime({ root }) {
   try {
     const modules = {
       auth: await server.ssrLoadModule("/packages/auth/src/index.ts"),
+      cli: await server.ssrLoadModule("/packages/cli/src/index.ts"),
       core: await server.ssrLoadModule("/packages/core/src/index.ts"),
       db: await server.ssrLoadModule("/packages/db/src/index.ts"),
       email: await server.ssrLoadModule("/packages/email/src/index.ts"),

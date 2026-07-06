@@ -19,6 +19,7 @@
       "@carboti/audit": ["./packages/audit/src/index.ts"],
       "@carboti/auth": ["./packages/auth/src/index.ts"],
       "@carboti/charts": ["./packages/charts/src/index.tsx"],
+      "@carboti/cli": ["./packages/cli/src/index.ts"],
       "@carboti/config": ["./packages/config/src/index.ts"],
       "@carboti/core": ["./packages/core/src/index.ts"],
       "@carboti/db": ["./packages/db/src/index.ts"],

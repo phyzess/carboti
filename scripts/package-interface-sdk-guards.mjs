@@ -1,4 +1,4 @@
-export async function assertSdkInterfaces({ assert, sdk }) {
+export async function assertSdkInterfaces({ assert, cli, sdk }) {
   assert(
     sdk.CarbotiClient && sdk.CarbotiApiError,
     "sdk must export CarbotiClient and CarbotiApiError.",
@@ -56,4 +56,27 @@ export async function assertSdkInterfaces({ assert, sdk }) {
       "sdk error must expose API status and code.",
     );
   }
+
+  const output = [];
+  const errors = [];
+  const initExitCode = await cli.runCarbotiCli(
+    ["init", "--base-url", "https://carboti.example.test"],
+    {},
+    {
+      stderr: {
+        write: (value) => errors.push(value),
+      },
+      stdin: ReadableStream.from([]),
+      stdout: {
+        write: (value) => output.push(value),
+      },
+    },
+  );
+
+  assert(
+    initExitCode === 0 &&
+      errors.length === 0 &&
+      output.join("").includes("https://carboti.example.test"),
+    "cli must expose an init command that prints a local configuration template.",
+  );
 }

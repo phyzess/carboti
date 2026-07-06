@@ -10,9 +10,11 @@ export function assertPackageInterfaceCoverageGuards(context) {
       packageInterfaceTests.includes("localeCandidatesFromAcceptLanguage") &&
       packageInterfaceTests.includes("CarbotiClient") &&
       packageInterfaceTests.includes("CarbotiApiError") &&
+      packageInterfaceTests.includes("runCarbotiCli") &&
+      packageInterfaceTests.includes("init command") &&
       packageInterfaceTests.includes("apiErrorFromResponse") &&
       packageInterfaceTests.includes("Backend validation failed.") &&
       packageInterfaceTests.includes("apiNetworkError"),
-    "package interface tests must exercise import-pipeline helpers, db schema exports, i18n helpers, sdk client errors, and web API error parsing.",
+    "package interface tests must exercise import-pipeline helpers, db schema exports, i18n helpers, sdk client errors, cli commands, and web API error parsing.",
   );
 }

@@ -195,6 +195,16 @@ importers:
         specifier: 19.2.7
         version: 19.2.7(react@19.2.7)
 
+  packages/cli:
+    dependencies:
+      '@carboti/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+    devDependencies:
+      '@types/node':
+        specifier: 26.0.0
+        version: 26.0.0
+
   packages/config:
     dependencies:
       valibot:

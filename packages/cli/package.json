@@ -1,0 +1,21 @@
+{
+  "name": "@carboti/cli",
+  "version": "0.0.0",
+  "private": true,
+  "bin": {
+    "carboti": "./src/bin.ts"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@carboti/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "26.0.0"
+  }
+}
