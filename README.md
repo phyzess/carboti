@@ -7,6 +7,8 @@ emails, attachments, documents, and API payloads without losing provenance. It
 stores raw inputs first, turns them into normalized envelopes and artifacts, and
 keeps lineage and audit evidence available for downstream systems and agents.
 
+中文版本：[README.zh-CN.md](./README.zh-CN.md)
+
 ## Positioning
 
 `carboti` is not a mail parser, a workflow builder, or a business application.

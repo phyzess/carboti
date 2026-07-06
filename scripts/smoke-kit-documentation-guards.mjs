@@ -12,17 +12,21 @@ export function assertKitDocumentationGuards(context) {
     refactorLocalityDecisionZh,
   } = context;
 
-  assert(readme.includes("business-neutral"), "README must describe qitu as business-neutral.");
   assert(
-    readme.includes("README.zh-CN.md") && readme.includes("docs/zh-CN.md"),
-    "README must link to the Chinese documentation entrypoints.",
+    readme.includes("Raw-first data ingestion for emails, documents, and AI agents.") &&
+      readme.includes("Cloudflare-first ingestion runtime"),
+    "README must describe carboti's raw-first Cloudflare-first positioning.",
   );
   assert(
-    readmeZh.includes("鵸鵌") &&
-      readmeZh.includes("歧途") &&
-      readmeZh.includes("@carboti/*") &&
-      readmeZh.includes("docs/zh-CN.md"),
-    "Chinese README must preserve the qitu naming story, package prefix, and docs index link.",
+    readme.includes("README.zh-CN.md") && readme.includes("docs/carboti/product-plan.md"),
+    "README must link to the Chinese README and carboti product plan.",
+  );
+  assert(
+    readmeZh.includes("raw-first") &&
+      readmeZh.includes("Cloudflare-first") &&
+      readmeZh.includes("source、pipeline、artifact、lineage") &&
+      readmeZh.includes("docs/carboti/product-plan.md"),
+    "Chinese README must describe carboti's product boundary and product plan link.",
   );
   assert(
     docsZh.includes("README.zh-CN.md") &&
@@ -35,10 +39,10 @@ export function assertKitDocumentationGuards(context) {
     "Chinese docs index must point to the key Chinese documentation entrypoints.",
   );
   assert(
-    readme.includes("Two app-owned starter feature adapters") &&
-      readme.includes("Optional example feature packages") &&
-      readme.includes("runnable kit baseline"),
-    "README must describe the current starter adapters and optional example packages.",
+    readme.includes("GET /api/carboti/contract") &&
+      readme.includes("@carboti/core") &&
+      readme.includes("source, message, artifact, lineage, processor, and webhook delivery"),
+    "README must describe the first carboti contract endpoint and reusable core package.",
   );
   assert(
     demoDoc.includes("apps/web/src/api-client.ts") &&
