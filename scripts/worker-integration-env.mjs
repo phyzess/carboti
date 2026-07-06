@@ -29,6 +29,7 @@ export async function createTestEnv(overrides = {}) {
     PUBLIC_APP_NAME: "carboti",
     PUBLIC_APP_URL: "http://localhost:5173",
     MAIL_FROM: "noreply@example.com",
+    CARBOTI_SECRET_ENCRYPTION_KEY: "test-only-carboti-secret-encryption-key",
     DB: new FakeD1Database(database),
     EMAIL: new FakeEmailSender(),
     SOURCE_FILES: sourceFiles,

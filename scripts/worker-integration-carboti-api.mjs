@@ -218,6 +218,33 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
     processor.capabilityManifest.outputArtifactKinds.join(",") === "processor_output",
     "external processor config returns its capability manifest",
   );
+  assert(processor.signingSecretRef, "external processor config returns a signing secret ref");
+
+  const processorConfigRow = await env.DB.prepare(
+    "SELECT config_json FROM carboti_processor_configs WHERE id = ?",
+  )
+    .bind(processor.processorId)
+    .first();
+  const processorConfig = JSON.parse(processorConfigRow.config_json);
+  assert(
+    processorConfig.signingSecretRef === processor.signingSecretRef,
+    "processor config stores a signing secret ref",
+  );
+  assert(
+    !("signingSecret" in processorConfig),
+    "processor config does not store the inline signing secret",
+  );
+
+  const processorSecretRow = await env.DB.prepare(
+    "SELECT ciphertext FROM carboti_secret_refs WHERE id = ?",
+  )
+    .bind(processor.signingSecretRef)
+    .first();
+  assert(processorSecretRow.ciphertext, "processor signing secret is stored as ciphertext");
+  assert(
+    !processorSecretRow.ciphertext.includes(processorSigningSecret),
+    "processor signing secret ciphertext does not contain the plaintext secret",
+  );
 
   let signedRequestVerified = false;
   await withMockedFetch(
@@ -410,9 +437,9 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
       );
 
       const failedRun = await env.DB.prepare(
-        "SELECT status, error_message FROM carboti_processor_runs WHERE processor_id = ? ORDER BY started_at DESC LIMIT 1",
+        "SELECT status, error_message FROM carboti_processor_runs WHERE processor_id = ? AND error_message LIKE ? ORDER BY started_at DESC LIMIT 1",
       )
-        .bind(processor.processorId)
+        .bind(processor.processorId, "%processor exploded%")
         .first();
       assert(failedRun.status === "failed", "failed processor response records failed run");
       assert(
@@ -421,8 +448,10 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
       );
 
       const failedDelivery = await env.DB.prepare(
-        "SELECT id, status, response_status FROM carboti_webhook_deliveries ORDER BY created_at DESC LIMIT 1",
-      ).first();
+        "SELECT id, status, response_status FROM carboti_webhook_deliveries WHERE processor_id = ? AND response_status = ? ORDER BY created_at DESC LIMIT 1",
+      )
+        .bind(processor.processorId, 500)
+        .first();
       assert(failedDelivery.status === "failed", "failed processor response records delivery");
       assert(failedDelivery.response_status === 500, "failed delivery records response status");
 

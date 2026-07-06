@@ -14,6 +14,11 @@ import {
   requireCarbotiApiClient,
   type CarbotiApiClient,
 } from "./carboti-api-auth";
+import {
+  decryptCarbotiSecret,
+  encryptCarbotiSecret,
+  type CarbotiEncryptedSecret,
+} from "./carboti-secret-store";
 import { authError, parseRequestJson, type AppContext } from "./http-utils";
 
 const CreateExternalProcessorInputSchema = v.object({
@@ -75,6 +80,8 @@ type ProcessorDeliveryRow = {
   status: string;
 };
 
+type ProcessorSecretRow = CarbotiEncryptedSecret;
+
 export function registerCarbotiProcessorRoutes(app: Hono<{ Bindings: Env }>): void {
   app.post("/api/carboti/processors/external", async (context) => {
     const auth = await requireCarbotiApiClient(context, "processors:write");
@@ -124,12 +131,50 @@ async function createExternalProcessor(
   const now = new Date().toISOString();
   const processorId = `processor:external:${crypto.randomUUID()}`;
   const endpointId = endpointIdFor(processorId);
+  const signingSecretRef = signingSecretRefFor(processorId);
   const timeoutSeconds = Math.min(Math.max(input.input.timeoutSeconds ?? 30, 1), 60);
   const capabilityManifest = normalizeCarbotiProcessorCapabilityManifest(
     input.input.capabilityManifest,
   );
+  let encryptedSigningSecret: CarbotiEncryptedSecret;
+  try {
+    encryptedSigningSecret = await encryptCarbotiSecret(context.env, input.input.signingSecret);
+  } catch {
+    return authError(
+      context,
+      "processor_secret_store_unavailable",
+      "Processor signing secret store is not configured.",
+      409,
+    );
+  }
 
   await context.env.DB.batch([
+    context.env.DB.prepare(
+      `
+        INSERT INTO carboti_secret_refs (
+          id,
+          workspace_id,
+          kind,
+          algorithm,
+          key_version,
+          iv,
+          ciphertext,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    ).bind(
+      signingSecretRef,
+      input.client.workspaceId,
+      "processor_signing_key",
+      encryptedSigningSecret.algorithm,
+      encryptedSigningSecret.keyVersion,
+      encryptedSigningSecret.iv,
+      encryptedSigningSecret.ciphertext,
+      now,
+      now,
+    ),
     context.env.DB.prepare(
       `
         INSERT INTO carboti_processor_configs (
@@ -157,7 +202,7 @@ async function createExternalProcessor(
       JSON.stringify({
         apiClientId: input.client.id,
         capabilityManifest,
-        signingSecret: input.input.signingSecret,
+        signingSecretRef,
       }),
       now,
       now,
@@ -180,7 +225,7 @@ async function createExternalProcessor(
       input.client.workspaceId,
       input.input.endpointUrl,
       "active",
-      `processor:${processorId}:inline-signing-key`,
+      signingSecretRef,
       now,
       now,
     ),
@@ -196,6 +241,7 @@ async function createExternalProcessor(
           capabilityManifest,
           endpointId,
           endpointUrl: input.input.endpointUrl,
+          signingSecretRef,
           timeoutSeconds,
         },
         subject: {
@@ -213,6 +259,7 @@ async function createExternalProcessor(
       endpointUrl: input.input.endpointUrl,
       kind: "external_webhook",
       processorId,
+      signingSecretRef,
       status: "active",
       timeoutSeconds,
     },
@@ -236,13 +283,21 @@ async function invokeExternalProcessor(
   }
 
   const config = parseProcessorConfig(processor.config_json);
-  if (!config.signingSecret) {
+  if (!config.signingSecretRef) {
     return authError(
       context,
       "processor_signing_secret_missing",
       "Processor is not invokable.",
       409,
     );
+  }
+
+  const signingSecret = await readProcessorSigningSecret(context, {
+    client: input.client,
+    secretRef: config.signingSecretRef,
+  });
+  if (!signingSecret.ok) {
+    return authError(context, signingSecret.code, signingSecret.message, 409);
   }
 
   const processorInput = await readProcessorInputObject(context, input.client, input.messageId);
@@ -329,7 +384,7 @@ async function invokeExternalProcessor(
   };
   const body = JSON.stringify(payload);
   const timestamp = now;
-  const signature = await hmacSha256Hex(config.signingSecret, `${timestamp}.${body}`);
+  const signature = await hmacSha256Hex(signingSecret.value, `${timestamp}.${body}`);
 
   let response: Response;
   try {
@@ -595,6 +650,62 @@ async function readProcessorInputArtifacts(
       },
     ];
   });
+}
+
+async function readProcessorSigningSecret(
+  context: AppContext,
+  input: {
+    client: CarbotiApiClient;
+    secretRef: string;
+  },
+): Promise<
+  | {
+      ok: true;
+      value: string;
+    }
+  | {
+      code: "processor_signing_secret_missing" | "processor_signing_secret_unavailable";
+      message: string;
+      ok: false;
+    }
+> {
+  const secret = await context.env.DB.prepare(
+    `
+      SELECT
+        algorithm,
+        ciphertext,
+        iv,
+        key_version AS keyVersion
+      FROM carboti_secret_refs
+      WHERE id = ?
+        AND workspace_id = ?
+        AND kind = ?
+      LIMIT 1
+    `,
+  )
+    .bind(input.secretRef, input.client.workspaceId, "processor_signing_key")
+    .first<ProcessorSecretRow>();
+
+  if (!secret) {
+    return {
+      code: "processor_signing_secret_missing",
+      message: "Processor signing secret was not found.",
+      ok: false,
+    };
+  }
+
+  try {
+    return {
+      ok: true,
+      value: await decryptCarbotiSecret(context.env, secret),
+    };
+  } catch {
+    return {
+      code: "processor_signing_secret_unavailable",
+      message: "Processor signing secret could not be decrypted.",
+      ok: false,
+    };
+  }
 }
 
 async function recordProcessorSuccess(
@@ -1014,12 +1125,12 @@ function toHex(bytes: Uint8Array): string {
 
 function parseProcessorConfig(value: string | null): {
   capabilityManifest: CarbotiProcessorCapabilityManifest;
-  signingSecret: string | null;
+  signingSecretRef: string | null;
 } {
   if (!value) {
     return {
       capabilityManifest: normalizeCarbotiProcessorCapabilityManifest(),
-      signingSecret: null,
+      signingSecretRef: null,
     };
   }
   try {
@@ -1028,18 +1139,19 @@ function parseProcessorConfig(value: string | null): {
     if (!record) {
       return {
         capabilityManifest: normalizeCarbotiProcessorCapabilityManifest(),
-        signingSecret: null,
+        signingSecretRef: null,
       };
     }
 
     return {
       capabilityManifest: readCapabilityManifest(record.capabilityManifest),
-      signingSecret: typeof record.signingSecret === "string" ? record.signingSecret : null,
+      signingSecretRef:
+        typeof record.signingSecretRef === "string" ? record.signingSecretRef : null,
     };
   } catch {
     return {
       capabilityManifest: normalizeCarbotiProcessorCapabilityManifest(),
-      signingSecret: null,
+      signingSecretRef: null,
     };
   }
 }
@@ -1070,4 +1182,8 @@ function artifactIdFor(messageId: string, processorRunId: string, index: number)
 
 function endpointIdFor(processorId: string): string {
   return `endpoint:${processorId}`;
+}
+
+function signingSecretRefFor(processorId: string): string {
+  return `secret:${processorId}:signing-key`;
 }

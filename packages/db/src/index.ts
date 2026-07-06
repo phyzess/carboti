@@ -23,6 +23,7 @@ export {
   carbotiPipelines,
   carbotiProcessorConfigs,
   carbotiProcessorRuns,
+  carbotiSecretRefs,
   carbotiSources,
   carbotiWebhookDeliveries,
   carbotiWebhookEndpoints,

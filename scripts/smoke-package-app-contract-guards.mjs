@@ -58,6 +58,7 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes("carboti_api_clients") &&
       workerSources.includes("carboti_processor_runs") &&
       workerSources.includes("carboti_webhook_deliveries") &&
+      workerSources.includes("carboti_secret_refs") &&
       workerSources.includes("carboti.artifact.submitted") &&
       workerSources.includes("carboti.processor.invoked") &&
       workerSources.includes("x-carboti-signature") &&
@@ -65,6 +66,10 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes("processor_capability_violation") &&
       workerSources.includes("outputArtifactKinds") &&
       workerSources.includes("inputArtifactKinds") &&
+      workerSources.includes("signingSecretRef") &&
+      workerSources.includes("encryptCarbotiSecret") &&
+      workerSources.includes("processor_secret_store_unavailable") &&
+      !workerSources.includes("inline-signing-key") &&
       workerSources.includes("retry_of_delivery_id") &&
       workerSources.includes("HMAC") &&
       workerSources.includes("carbotiRawHttpObjectKey") &&

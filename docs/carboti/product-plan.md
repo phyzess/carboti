@@ -186,6 +186,7 @@ The first product slice is:
 6. Validate returned artifacts.
 7. Retry and log delivery failures.
 8. Enforce processor capability manifests for allowed inputs and outputs.
+9. Store processor signing keys through encrypted secret references.
 
 ### Phase 4: Developer Surface
 
