@@ -87,6 +87,7 @@ Worker 当前暴露的第一个产品契约端点：
 
 ```text
 GET /api/carboti/contract
+GET /api/carboti/openapi.json
 ```
 
 ## 路线图

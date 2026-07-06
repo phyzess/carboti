@@ -1,5 +1,7 @@
 import * as v from "valibot";
 
+export { carbotiOpenApiDocument, type CarbotiOpenApiDocument } from "./openapi";
+
 export const carbotiSourceKinds = [
   "cloudflare_email",
   "email_forward",

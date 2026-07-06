@@ -10,6 +10,25 @@ const apiHeaders = {
 };
 
 export async function testCarbotiHttpIngestAndReplay({ client, env }) {
+  const openApi = await client.json("/api/carboti/openapi.json");
+  assert(openApi.openapi === "3.1.0", "Carboti OpenAPI document is exposed");
+  assert(
+    openApi.components.securitySchemes.bearerAuth.scheme === "bearer",
+    "Carboti OpenAPI documents bearer token auth",
+  );
+  assert(
+    openApi.components.schemas.CapabilityManifest.properties.outputArtifactKinds,
+    "Carboti OpenAPI documents processor capability manifests",
+  );
+  assert(
+    openApi.paths["/api/carboti/ingest/http"].post.operationId === "ingestHttpObject" &&
+      openApi.paths["/api/carboti/processors/external"].post.operationId ===
+        "createExternalProcessor" &&
+      openApi.paths["/api/carboti/processor-deliveries/{deliveryId}/retry"].post.operationId ===
+        "retryProcessorDelivery",
+    "Carboti OpenAPI covers ingest, external processor, and retry routes",
+  );
+
   await expectApiError(
     await client.post("/api/carboti/ingest/http", "label,value\nDenied,0\n", {
       headers: {

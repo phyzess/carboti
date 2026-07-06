@@ -58,6 +58,15 @@ export function assertCoreInterfaces({ assert, core, db }) {
   );
 
   assert(
+    core.carbotiOpenApiDocument.openapi === "3.1.0" &&
+      core.carbotiOpenApiDocument.paths["/api/carboti/ingest/http"].post.operationId ===
+        "ingestHttpObject" &&
+      core.carbotiOpenApiDocument.paths["/api/carboti/processors/external"].post.operationId ===
+        "createExternalProcessor",
+    "core must expose the versioned Carboti OpenAPI contract.",
+  );
+
+  assert(
     db.carbotiArtifacts &&
       db.carbotiLineageEdges &&
       db.carbotiObjects &&

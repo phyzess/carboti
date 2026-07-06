@@ -95,6 +95,7 @@ The Worker exposes a first product contract endpoint:
 
 ```text
 GET /api/carboti/contract
+GET /api/carboti/openapi.json
 ```
 
 ## Roadmap

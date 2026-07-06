@@ -43,6 +43,7 @@ export function assertPackageAppContractGuards(context) {
   );
   assert(
     workerSources.includes("requireCarbotiApiClient") &&
+      workerSources.includes('app.get("/api/carboti/openapi.json"') &&
       workerSources.includes('app.post("/api/carboti/ingest/http"') &&
       workerSources.includes('app.get("/api/carboti/objects/:objectId"') &&
       workerSources.includes('app.get("/api/carboti/artifacts/:artifactId"') &&
@@ -69,6 +70,7 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes("signingSecretRef") &&
       workerSources.includes("encryptCarbotiSecret") &&
       workerSources.includes("processor_secret_store_unavailable") &&
+      workerSources.includes("carbotiOpenApiDocument") &&
       !workerSources.includes("inline-signing-key") &&
       workerSources.includes("retry_of_delivery_id") &&
       workerSources.includes("HMAC") &&

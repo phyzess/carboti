@@ -3,6 +3,7 @@ import {
   carbotiDeliveryStatuses,
   carbotiJobStatuses,
   carbotiObjectKinds,
+  carbotiOpenApiDocument,
   carbotiProcessorKinds,
   carbotiSinkKinds,
   carbotiSourceKinds,
@@ -26,4 +27,8 @@ export function registerCarbotiContractRoute(app: Hono<{ Bindings: Env }>): void
       },
     }),
   );
+}
+
+export function registerCarbotiOpenApiRoute(app: Hono<{ Bindings: Env }>): void {
+  app.get("/api/carboti/openapi.json", (context) => context.json(carbotiOpenApiDocument));
 }

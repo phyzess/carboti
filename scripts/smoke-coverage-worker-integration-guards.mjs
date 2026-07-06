@@ -11,6 +11,7 @@ export function assertWorkerIntegrationCoverageGuards(context) {
       workerIntegration.includes("/api/auth/password-reset/request") &&
       workerIntegration.includes("/api/auth/password-reset/confirm") &&
       workerIntegration.includes("/api/source-files") &&
+      workerIntegration.includes("/api/carboti/openapi.json") &&
       workerIntegration.includes("/api/carboti/ingest/http") &&
       workerIntegration.includes("/api/carboti/messages/") &&
       workerIntegration.includes("not_a_real_artifact") &&
