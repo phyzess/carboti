@@ -18,8 +18,9 @@ export function assertWorkerSchemaGuards(context) {
   assert(
     coreMigration.includes("carboti_objects") &&
       coreMigration.includes("carboti_artifacts") &&
-      coreMigration.includes("carboti_lineage_edges"),
-    "Carboti migrations must include object, artifact, and lineage metadata tables.",
+      coreMigration.includes("carboti_lineage_edges") &&
+      coreMigration.includes("retry_of_delivery_id"),
+    "Carboti migrations must include object, artifact, lineage, and replayable delivery metadata tables.",
   );
   assert(
     coreMigration.includes("ALTER TABLE users ADD COLUMN role") &&

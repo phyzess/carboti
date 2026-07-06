@@ -51,6 +51,7 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes('app.post("/api/carboti/messages/:messageId/replay"') &&
       workerSources.includes('app.post("/api/carboti/processors/external"') &&
       workerSources.includes('app.post("/api/carboti/processors/:processorId/invoke"') &&
+      workerSources.includes('app.post("/api/carboti/processor-deliveries/:deliveryId/retry"') &&
       workerSources.includes('"artifacts:write"') &&
       workerSources.includes('"processors:invoke"') &&
       workerSources.includes('"processors:write"') &&
@@ -60,10 +61,11 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes("carboti.artifact.submitted") &&
       workerSources.includes("carboti.processor.invoked") &&
       workerSources.includes("x-carboti-signature") &&
+      workerSources.includes("retry_of_delivery_id") &&
       workerSources.includes("HMAC") &&
       workerSources.includes("carbotiRawHttpObjectKey") &&
       workerSources.includes("processor_output"),
-    "worker must expose token-scoped Carboti HTTP ingest, evidence read, artifact submit, outbound processor, and replay APIs.",
+    "worker must expose token-scoped Carboti HTTP ingest, evidence read, artifact submit, outbound processor, delivery retry, and replay APIs.",
   );
   assert(
     webSources.includes("VITE_QITU_DEFAULT_LOCALE") &&

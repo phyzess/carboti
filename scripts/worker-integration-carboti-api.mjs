@@ -298,12 +298,19 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
       );
 
       const delivery = await env.DB.prepare(
-        "SELECT status, response_status FROM carboti_webhook_deliveries WHERE id = ?",
+        "SELECT id, status, response_status FROM carboti_webhook_deliveries WHERE id = ?",
       )
         .bind(invoke.deliveryId)
         .first();
       assert(delivery.status === "delivered", "processor invocation records delivery success");
       assert(delivery.response_status === 200, "processor delivery records response status");
+      await expectApiError(
+        await client.post(`/api/carboti/processor-deliveries/${delivery.id}/retry`, "", {
+          headers: apiHeaders,
+        }),
+        409,
+        "delivery_not_retryable",
+      );
     },
   );
   assert(signedRequestVerified, "processor invocation signs the outbound request with HMAC");
@@ -343,10 +350,72 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
       );
 
       const failedDelivery = await env.DB.prepare(
-        "SELECT status, response_status FROM carboti_webhook_deliveries ORDER BY created_at DESC LIMIT 1",
+        "SELECT id, status, response_status FROM carboti_webhook_deliveries ORDER BY created_at DESC LIMIT 1",
       ).first();
       assert(failedDelivery.status === "failed", "failed processor response records delivery");
       assert(failedDelivery.response_status === 500, "failed delivery records response status");
+
+      await withMockedFetch(
+        async () =>
+          new Response(
+            JSON.stringify({
+              artifacts: [
+                {
+                  data: {
+                    recovered: true,
+                  },
+                  kind: "processor_output",
+                  schemaId: "external.processor.retry.v1",
+                },
+              ],
+            }),
+            {
+              headers: {
+                "content-type": "application/json",
+              },
+              status: 200,
+            },
+          ),
+        async () => {
+          const retryResponse = await client.post(
+            `/api/carboti/processor-deliveries/${failedDelivery.id}/retry`,
+            "",
+            {
+              headers: apiHeaders,
+            },
+          );
+          await expectStatus(retryResponse, 201);
+          const retry = await retryResponse.json();
+          assert(
+            retry.retriedFromDeliveryId === failedDelivery.id,
+            "retry response links back to failed delivery",
+          );
+          assert(retry.artifactIds.length === 1, "retry stores returned artifact");
+
+          const retryDelivery = await env.DB.prepare(
+            "SELECT status, attempt_count, retry_of_delivery_id FROM carboti_webhook_deliveries WHERE id = ?",
+          )
+            .bind(retry.deliveryId)
+            .first();
+          assert(retryDelivery.status === "delivered", "retry records delivered status");
+          assert(retryDelivery.attempt_count === 2, "retry increments attempt count");
+          assert(
+            retryDelivery.retry_of_delivery_id === failedDelivery.id,
+            "retry delivery points at original failed delivery",
+          );
+
+          const retryArtifact = await client.json(
+            `/api/carboti/artifacts/${retry.artifactIds[0]}`,
+            {
+              headers: apiHeaders,
+            },
+          );
+          assert(
+            retryArtifact.artifact.data.recovered === true,
+            "retry stores recovered processor artifact",
+          );
+        },
+      );
     },
   );
 

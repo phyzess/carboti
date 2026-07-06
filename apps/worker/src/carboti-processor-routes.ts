@@ -59,6 +59,15 @@ type ProcessorArtifactRow = {
   kind: string;
 };
 
+type ProcessorDeliveryRow = {
+  attempt_count: number;
+  id: string;
+  input_object_id: string | null;
+  message_id: string | null;
+  processor_id: string | null;
+  status: string;
+};
+
 export function registerCarbotiProcessorRoutes(app: Hono<{ Bindings: Env }>): void {
   app.post("/api/carboti/processors/external", async (context) => {
     const auth = await requireCarbotiApiClient(context, "processors:write");
@@ -84,6 +93,16 @@ export function registerCarbotiProcessorRoutes(app: Hono<{ Bindings: Env }>): vo
       client: auth.client,
       messageId: parsed.value.messageId,
       processorId: context.req.param("processorId"),
+    });
+  });
+
+  app.post("/api/carboti/processor-deliveries/:deliveryId/retry", async (context) => {
+    const auth = await requireCarbotiApiClient(context, "processors:invoke");
+    if (!auth.ok) return auth.response;
+
+    return retryProcessorDelivery(context, {
+      client: auth.client,
+      deliveryId: context.req.param("deliveryId"),
     });
   });
 }
@@ -191,9 +210,11 @@ async function createExternalProcessor(
 async function invokeExternalProcessor(
   context: AppContext,
   input: {
+    attemptCount?: number;
     client: CarbotiApiClient;
     messageId: string;
     processorId: string;
+    retryOfDeliveryId?: string | null;
   },
 ): Promise<Response> {
   const processor = await readProcessorConfig(context, input.client, input.processorId);
@@ -217,6 +238,7 @@ async function invokeExternalProcessor(
   }
 
   const now = new Date().toISOString();
+  const attemptCount = input.attemptCount ?? 1;
   const processorRunId = crypto.randomUUID();
   const deliveryId = crypto.randomUUID();
   const endpointId = endpointIdFor(processor.id);
@@ -257,11 +279,13 @@ async function invokeExternalProcessor(
       deliveryId,
       endpointId,
       errorMessage: error instanceof Error ? error.message : "Processor invocation failed.",
+      attemptCount,
       inputObjectId: processorInput.id,
       messageId: input.messageId,
       now,
       processorId: processor.id,
       processorRunId,
+      retryOfDeliveryId: input.retryOfDeliveryId ?? null,
       responseStatus: null,
     });
     return authError(context, "processor_invocation_failed", "Processor invocation failed.", 502);
@@ -274,11 +298,13 @@ async function invokeExternalProcessor(
       deliveryId,
       endpointId,
       errorMessage,
+      attemptCount,
       inputObjectId: processorInput.id,
       messageId: input.messageId,
       now,
       processorId: processor.id,
       processorRunId,
+      retryOfDeliveryId: input.retryOfDeliveryId ?? null,
       responseStatus: response.status,
     });
     return authError(context, "processor_response_failed", "Processor returned an error.", 502);
@@ -291,11 +317,13 @@ async function invokeExternalProcessor(
       deliveryId,
       endpointId,
       errorMessage: responseBody.message,
+      attemptCount,
       inputObjectId: processorInput.id,
       messageId: input.messageId,
       now,
       processorId: processor.id,
       processorRunId,
+      retryOfDeliveryId: input.retryOfDeliveryId ?? null,
       responseStatus: response.status,
     });
     return authError(context, "processor_response_invalid", responseBody.message, 502);
@@ -303,6 +331,7 @@ async function invokeExternalProcessor(
 
   await recordProcessorSuccess(context, {
     artifacts: responseBody.value.artifacts,
+    attemptCount,
     client: input.client,
     deliveryId,
     endpointId,
@@ -311,6 +340,7 @@ async function invokeExternalProcessor(
     now,
     processorId: processor.id,
     processorRunId,
+    retryOfDeliveryId: input.retryOfDeliveryId ?? null,
     responseStatus: response.status,
   });
 
@@ -321,10 +351,61 @@ async function invokeExternalProcessor(
       ),
       deliveryId,
       processorRunId,
+      retriedFromDeliveryId: input.retryOfDeliveryId ?? null,
       status: "succeeded",
     },
     201,
   );
+}
+
+async function retryProcessorDelivery(
+  context: AppContext,
+  input: {
+    client: CarbotiApiClient;
+    deliveryId: string;
+  },
+): Promise<Response> {
+  const delivery = await context.env.DB.prepare(
+    `
+      SELECT id, status, attempt_count, processor_id, message_id, input_object_id
+      FROM carboti_webhook_deliveries
+      WHERE id = ?
+        AND workspace_id = ?
+      LIMIT 1
+    `,
+  )
+    .bind(input.deliveryId, input.client.workspaceId)
+    .first<ProcessorDeliveryRow>();
+
+  if (!delivery) {
+    return authError(context, "delivery_not_found", "Processor delivery was not found.", 404);
+  }
+
+  if (delivery.status !== "failed") {
+    return authError(
+      context,
+      "delivery_not_retryable",
+      "Only failed deliveries can be retried.",
+      409,
+    );
+  }
+
+  if (!delivery.processor_id || !delivery.message_id) {
+    return authError(
+      context,
+      "delivery_replay_metadata_missing",
+      "Processor delivery cannot be retried because replay metadata is missing.",
+      409,
+    );
+  }
+
+  return invokeExternalProcessor(context, {
+    attemptCount: delivery.attempt_count + 1,
+    client: input.client,
+    messageId: delivery.message_id,
+    processorId: delivery.processor_id,
+    retryOfDeliveryId: delivery.id,
+  });
 }
 
 async function readProcessorConfig(
@@ -412,6 +493,7 @@ async function recordProcessorSuccess(
   context: AppContext,
   input: {
     artifacts: ExternalProcessorArtifact[];
+    attemptCount: number;
     client: CarbotiApiClient;
     deliveryId: string;
     endpointId: string;
@@ -420,6 +502,7 @@ async function recordProcessorSuccess(
     now: string;
     processorId: string;
     processorRunId: string;
+    retryOfDeliveryId: string | null;
     responseStatus: number;
   },
 ): Promise<void> {
@@ -553,7 +636,13 @@ async function recordProcessorSuccess(
       `
         INSERT INTO carboti_webhook_deliveries (
           id,
+          workspace_id,
           endpoint_id,
+          processor_id,
+          processor_run_id,
+          message_id,
+          input_object_id,
+          retry_of_delivery_id,
           event_type,
           status,
           attempt_count,
@@ -563,14 +652,20 @@ async function recordProcessorSuccess(
           delivered_at,
           created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
     ).bind(
       input.deliveryId,
+      input.client.workspaceId,
       input.endpointId,
+      input.processorId,
+      input.processorRunId,
+      input.messageId,
+      input.inputObject.id,
+      input.retryOfDeliveryId,
       "processor.invoke",
       "delivered",
-      1,
+      input.attemptCount,
       input.responseStatus,
       null,
       null,
@@ -605,6 +700,7 @@ async function recordProcessorSuccess(
 async function recordProcessorFailure(
   context: AppContext,
   input: {
+    attemptCount: number;
     client: CarbotiApiClient;
     deliveryId: string;
     endpointId: string;
@@ -614,6 +710,7 @@ async function recordProcessorFailure(
     now: string;
     processorId: string;
     processorRunId: string;
+    retryOfDeliveryId: string | null;
     responseStatus: number | null;
   },
 ): Promise<void> {
@@ -652,7 +749,13 @@ async function recordProcessorFailure(
       `
         INSERT INTO carboti_webhook_deliveries (
           id,
+          workspace_id,
           endpoint_id,
+          processor_id,
+          processor_run_id,
+          message_id,
+          input_object_id,
+          retry_of_delivery_id,
           event_type,
           status,
           attempt_count,
@@ -662,14 +765,20 @@ async function recordProcessorFailure(
           delivered_at,
           created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
     ).bind(
       input.deliveryId,
+      input.client.workspaceId,
       input.endpointId,
+      input.processorId,
+      input.processorRunId,
+      input.messageId,
+      input.inputObjectId,
+      input.retryOfDeliveryId,
       "processor.invoke",
       "failed",
-      1,
+      input.attemptCount,
       input.responseStatus,
       input.errorMessage.slice(0, 1000),
       null,

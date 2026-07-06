@@ -151,7 +151,13 @@ export const carbotiWebhookDeliveries = sqliteTable(
   "carboti_webhook_deliveries",
   {
     id: text("id").primaryKey(),
+    workspaceId: text("workspace_id"),
     endpointId: text("endpoint_id").notNull(),
+    processorId: text("processor_id"),
+    processorRunId: text("processor_run_id"),
+    messageId: text("message_id"),
+    inputObjectId: text("input_object_id"),
+    retryOfDeliveryId: text("retry_of_delivery_id"),
     eventType: text("event_type").notNull(),
     status: text("status").notNull(),
     attemptCount: integer("attempt_count").notNull().default(0),
@@ -163,6 +169,13 @@ export const carbotiWebhookDeliveries = sqliteTable(
   },
   (table) => [
     index("carboti_webhook_deliveries_endpoint_created_idx").on(table.endpointId, table.createdAt),
+    index("carboti_webhook_deliveries_workspace_status_idx").on(
+      table.workspaceId,
+      table.status,
+      table.createdAt,
+    ),
+    index("carboti_webhook_deliveries_processor_run_idx").on(table.processorRunId),
+    index("carboti_webhook_deliveries_retry_idx").on(table.retryOfDeliveryId, table.createdAt),
   ],
 );
 

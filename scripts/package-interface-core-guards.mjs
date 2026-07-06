@@ -45,7 +45,11 @@ export function assertCoreInterfaces({ assert, core, db }) {
   );
 
   assert(
-    db.carbotiArtifacts && db.carbotiLineageEdges && db.carbotiObjects && db.carbotiProcessorRuns,
-    "db facade must export Carboti object, artifact, lineage, and processor run tables.",
+    db.carbotiArtifacts &&
+      db.carbotiLineageEdges &&
+      db.carbotiObjects &&
+      db.carbotiProcessorRuns &&
+      db.carbotiWebhookDeliveries,
+    "db facade must export Carboti object, artifact, lineage, processor run, and delivery tables.",
   );
 }
