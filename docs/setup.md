@@ -69,12 +69,12 @@ Do not put production secrets in these files. Use Cloudflare secrets for deploye
 
 The Worker expects these bindings:
 
-| Binding        | Type  | Local name              |
-| -------------- | ----- | ----------------------- |
+| Binding        | Type  | Local name                 |
+| -------------- | ----- | -------------------------- |
 | `DB`           | D1    | `carboti-dev`              |
 | `SOURCE_FILES` | R2    | `carboti-source-files-dev` |
 | `IMPORT_JOBS`  | Queue | `carboti-import-jobs-dev`  |
-| `EMAIL`        | Email | local metadata only     |
+| `EMAIL`        | Email | local metadata only        |
 
 The local env also defines:
 

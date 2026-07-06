@@ -49,12 +49,12 @@ cp apps/worker/.dev.vars.example apps/worker/.dev.vars
 
 本地 baseline 使用这些资源名：
 
-| Binding        | 产品  | 本地名                  |
-| -------------- | ----- | ----------------------- |
+| Binding        | 产品  | 本地名                     |
+| -------------- | ----- | -------------------------- |
 | `DB`           | D1    | `carboti-dev`              |
 | `SOURCE_FILES` | R2    | `carboti-source-files-dev` |
 | `IMPORT_JOBS`  | Queue | `carboti-import-jobs-dev`  |
-| `EMAIL`        | Email | local metadata only     |
+| `EMAIL`        | Email | local metadata only        |
 
 常用配置：
 

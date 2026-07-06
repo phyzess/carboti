@@ -21,7 +21,11 @@ export function createReplacements(options) {
     replacement("carboti_session", options.cookieName, "session cookie name"),
     replacement("carboti-worker", options.workerName, "Worker name"),
     replacement("carboti-dev", `${options.appName}-dev`, "local Cloudflare resource names"),
-    replacement("carboti-preview", `${options.appName}-preview`, "preview Cloudflare resource names"),
+    replacement(
+      "carboti-preview",
+      `${options.appName}-preview`,
+      "preview Cloudflare resource names",
+    ),
     replacement(
       "carboti-production",
       `${options.appName}-production`,

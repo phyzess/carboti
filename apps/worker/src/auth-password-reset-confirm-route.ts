@@ -1,4 +1,9 @@
-import { ConfirmPasswordResetInputSchema, hashPassword, hashSecret, isExpired } from "@carboti/auth";
+import {
+  ConfirmPasswordResetInputSchema,
+  hashPassword,
+  hashSecret,
+  isExpired,
+} from "@carboti/auth";
 import type { Hono } from "hono";
 import { deleteCookie } from "hono/cookie";
 import {

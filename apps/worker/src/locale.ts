@@ -1,4 +1,8 @@
-import { localeCandidatesFromAcceptLanguage, resolveLocale, type LocaleMetadata } from "@carboti/i18n";
+import {
+  localeCandidatesFromAcceptLanguage,
+  resolveLocale,
+  type LocaleMetadata,
+} from "@carboti/i18n";
 import { getCookie } from "hono/cookie";
 import type { AppContext } from "./http-utils";
 

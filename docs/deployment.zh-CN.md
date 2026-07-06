@@ -51,13 +51,13 @@ vp run deploy:production:dry-run
 
 Worker 需要：
 
-| Binding        | Product | Local name                 | Preview name                   | Production name                   |
-| -------------- | ------- | -------------------------- | ------------------------------ | --------------------------------- |
+| Binding        | Product | Local name                    | Preview name                      | Production name                      |
+| -------------- | ------- | ----------------------------- | --------------------------------- | ------------------------------------ |
 | `DB`           | D1      | `carboti-dev`                 | `carboti-preview`                 | `carboti-production`                 |
 | `SOURCE_FILES` | R2      | `carboti-source-files-dev`    | `carboti-source-files-preview`    | `carboti-source-files-production`    |
 | `IMPORT_JOBS`  | Queues  | `carboti-import-jobs-dev`     | `carboti-import-jobs-preview`     | `carboti-import-jobs-production`     |
 | DLQ            | Queues  | `carboti-import-jobs-dev-dlq` | `carboti-import-jobs-preview-dlq` | `carboti-import-jobs-production-dlq` |
-| `EMAIL`        | Email   | local metadata only        | Cloudflare Email Sending       | Cloudflare Email Sending          |
+| `EMAIL`        | Email   | local metadata only           | Cloudflare Email Sending          | Cloudflare Email Sending             |
 
 创建远端资源：
 

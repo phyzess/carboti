@@ -77,8 +77,8 @@ Cloudflare DLQs are normal queues. The starter baseline configures DLQ names in 
 
 Use the Cloudflare dashboard or account tooling to inspect whether the target DLQ has messages:
 
-| Environment | DLQ name                          |
-| ----------- | --------------------------------- |
+| Environment | DLQ name                             |
+| ----------- | ------------------------------------ |
 | Local       | `carboti-import-jobs-dev-dlq`        |
 | Preview     | `carboti-import-jobs-preview-dlq`    |
 | Production  | `carboti-import-jobs-production-dlq` |

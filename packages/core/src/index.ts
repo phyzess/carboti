@@ -32,21 +32,9 @@ export const carbotiArtifactKinds = [
   "processor_output",
 ] as const;
 
-export const carbotiProcessorKinds = [
-  "builtin",
-  "external_webhook",
-  "hosted",
-  "agent",
-] as const;
+export const carbotiProcessorKinds = ["builtin", "external_webhook", "hosted", "agent"] as const;
 
-export const carbotiSinkKinds = [
-  "api_pull",
-  "webhook",
-  "r2",
-  "s3",
-  "download",
-  "queue",
-] as const;
+export const carbotiSinkKinds = ["api_pull", "webhook", "r2", "s3", "download", "queue"] as const;
 
 export const carbotiJobStatuses = [
   "queued",
@@ -57,12 +45,7 @@ export const carbotiJobStatuses = [
   "canceled",
 ] as const;
 
-export const carbotiDeliveryStatuses = [
-  "pending",
-  "delivered",
-  "failed",
-  "disabled",
-] as const;
+export const carbotiDeliveryStatuses = ["pending", "delivered", "failed", "disabled"] as const;
 
 export const CarbotiSourceKindSchema = v.picklist(carbotiSourceKinds);
 export const CarbotiObjectKindSchema = v.picklist(carbotiObjectKinds);
@@ -215,9 +198,6 @@ export function parseCarbotiMessageEnvelope(input: unknown): CarbotiMessageEnvel
   return v.parse(CarbotiMessageEnvelopeSchema, input);
 }
 
-export function carbotiRawEmailObjectKey(input: {
-  receivedAt: string;
-  messageId: string;
-}): string {
+export function carbotiRawEmailObjectKey(input: { receivedAt: string; messageId: string }): string {
   return `raw-emails/${input.receivedAt.slice(0, 10)}/${input.messageId}.eml`;
 }

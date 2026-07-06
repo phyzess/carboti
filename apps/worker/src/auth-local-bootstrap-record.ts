@@ -1,4 +1,10 @@
-import { createSession, hashPassword, normalizeEmail, type Session, type User } from "@carboti/auth";
+import {
+  createSession,
+  hashPassword,
+  normalizeEmail,
+  type Session,
+  type User,
+} from "@carboti/auth";
 import { prepareLocalUserBootstrapStatements } from "./auth-local-bootstrap-statements";
 export type { LocalUserBootstrapOptions } from "./auth-local-bootstrap-types";
 import type { LocalUserBootstrapOptions } from "./auth-local-bootstrap-types";

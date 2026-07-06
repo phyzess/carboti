@@ -77,14 +77,14 @@ password-reset links must use the public custom origin.
 
 The Worker expects:
 
-| Binding        | Product | Local name                 | Preview name                   | Production name                   |
-| -------------- | ------- | -------------------------- | ------------------------------ | --------------------------------- |
+| Binding        | Product | Local name                    | Preview name                      | Production name                      |
+| -------------- | ------- | ----------------------------- | --------------------------------- | ------------------------------------ |
 | `DB`           | D1      | `carboti-dev`                 | `carboti-preview`                 | `carboti-production`                 |
 | `SOURCE_FILES` | R2      | `carboti-source-files-dev`    | `carboti-source-files-preview`    | `carboti-source-files-production`    |
 | `IMPORT_JOBS`  | Queues  | `carboti-import-jobs-dev`     | `carboti-import-jobs-preview`     | `carboti-import-jobs-production`     |
 | DLQ            | Queues  | `carboti-import-jobs-dev-dlq` | `carboti-import-jobs-preview-dlq` | `carboti-import-jobs-production-dlq` |
-| `EMAIL`        | Email   | local metadata only        | Cloudflare Email Sending       | Cloudflare Email Sending          |
-| Email Routing  | Email   | local simulated handler    | route to Worker email handler  | route to Worker email handler     |
+| `EMAIL`        | Email   | local metadata only           | Cloudflare Email Sending          | Cloudflare Email Sending             |
+| Email Routing  | Email   | local simulated handler       | route to Worker email handler     | route to Worker email handler        |
 
 Create remote resources with account-specific names:
 

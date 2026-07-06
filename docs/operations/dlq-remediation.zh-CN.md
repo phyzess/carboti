@@ -77,8 +77,8 @@ Cloudflare DLQ 是普通 Queue。starter baseline 在 `apps/worker/wrangler.json
 
 使用 Cloudflare dashboard 或账号工具检查目标 DLQ 是否有 messages：
 
-| Environment | DLQ name                          |
-| ----------- | --------------------------------- |
+| Environment | DLQ name                             |
+| ----------- | ------------------------------------ |
 | Local       | `carboti-import-jobs-dev-dlq`        |
 | Preview     | `carboti-import-jobs-preview-dlq`    |
 | Production  | `carboti-import-jobs-production-dlq` |
