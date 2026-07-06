@@ -95,6 +95,9 @@ export const carbotiSecretRefs = sqliteTable(
     keyVersion: text("key_version").notNull(),
     iv: text("iv").notNull(),
     ciphertext: text("ciphertext").notNull(),
+    name: text("name"),
+    description: text("description"),
+    status: text("status"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },
@@ -102,6 +105,11 @@ export const carbotiSecretRefs = sqliteTable(
     index("carboti_secret_refs_workspace_kind_idx").on(
       table.workspaceId,
       table.kind,
+      table.createdAt,
+    ),
+    index("carboti_secret_refs_workspace_status_idx").on(
+      table.workspaceId,
+      table.status,
       table.createdAt,
     ),
   ],

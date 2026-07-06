@@ -102,8 +102,16 @@ export function assertCoreInterfaces({ assert, core, db }) {
     core.carbotiOpenApiDocument.openapi === "3.1.0" &&
       core.carbotiOpenApiDocument.paths["/api/carboti/ingest/http"].post.operationId ===
         "ingestHttpObject" &&
+      core.carbotiOpenApiDocument.paths["/api/carboti/api-clients"].post.operationId ===
+        "createApiClient" &&
+      core.carbotiOpenApiDocument.paths["/api/carboti/secrets"].post.operationId ===
+        "createSecretRef" &&
       core.carbotiOpenApiDocument.paths["/api/carboti/connectors/manifests"].get.operationId ===
         "listConnectorManifests" &&
+      core.carbotiOpenApiDocument.paths["/api/carboti/messages/{messageId}/trace"].get
+        .operationId === "getMessageTrace" &&
+      core.carbotiOpenApiDocument.paths["/api/carboti/artifacts/{artifactId}/download-url"].post
+        .operationId === "createArtifactDownloadUrl" &&
       core.carbotiOpenApiDocument.paths["/api/carboti/processors/external"].post.operationId ===
         "createExternalProcessor" &&
       core.carbotiOpenApiDocument.paths["/api/carboti/processors/hosted"].post.operationId ===

@@ -29,6 +29,20 @@ export type CarbotiHttpIngestInput = {
   token?: string | undefined;
 };
 
+export type CarbotiCreateApiClientInput = {
+  name: string;
+  scopes: string[];
+  token?: string | undefined;
+};
+
+export type CarbotiCreateSecretInput = {
+  description?: string | undefined;
+  kind: "connector_credential" | "processor_signing_key" | "generic";
+  name: string;
+  plaintext: string;
+  token?: string | undefined;
+};
+
 export type CarbotiArtifactSubmitInput = {
   contentType?: string | undefined;
   data: unknown;
@@ -64,6 +78,7 @@ export type CarbotiConnectorRegistrationInput<TKind extends string> = {
   config?: Record<string, unknown> | undefined;
   kind: TKind;
   name: string;
+  secretRefs?: Record<string, string> | undefined;
   status?: "active" | "disabled" | undefined;
   token?: string | undefined;
 };
@@ -132,6 +147,62 @@ export class CarbotiClient {
     return this.requestJson("/api/carboti/ingest/http", {
       body: input.body,
       headers,
+      method: "POST",
+      token: input.token,
+    });
+  }
+
+  listApiClients(input: { token?: string | undefined } = {}): Promise<CarbotiApiResponse> {
+    return this.requestJson("/api/carboti/api-clients", {
+      token: input.token,
+    });
+  }
+
+  createApiClient(input: CarbotiCreateApiClientInput): Promise<CarbotiApiResponse> {
+    return this.requestJson("/api/carboti/api-clients", {
+      json: {
+        name: input.name,
+        scopes: input.scopes,
+      },
+      method: "POST",
+      token: input.token,
+    });
+  }
+
+  revokeApiClient(
+    clientId: string,
+    input: { token?: string | undefined } = {},
+  ): Promise<CarbotiApiResponse> {
+    return this.requestJson(`/api/carboti/api-clients/${encodePathSegment(clientId)}/revoke`, {
+      method: "POST",
+      token: input.token,
+    });
+  }
+
+  listSecrets(input: { token?: string | undefined } = {}): Promise<CarbotiApiResponse> {
+    return this.requestJson("/api/carboti/secrets", {
+      token: input.token,
+    });
+  }
+
+  createSecret(input: CarbotiCreateSecretInput): Promise<CarbotiApiResponse> {
+    return this.requestJson("/api/carboti/secrets", {
+      json: {
+        description: input.description,
+        kind: input.kind,
+        name: input.name,
+        plaintext: input.plaintext,
+      },
+      method: "POST",
+      token: input.token,
+    });
+  }
+
+  revokeSecret(
+    secretRef: string,
+    input: { token?: string | undefined } = {},
+  ): Promise<CarbotiApiResponse> {
+    return this.requestJson(`/api/carboti/secrets/${encodePathSegment(secretRef)}/revoke`, {
       method: "POST",
       token: input.token,
     });
@@ -245,6 +316,15 @@ export class CarbotiClient {
     });
   }
 
+  getMessageTrace(
+    messageId: string,
+    input: { token?: string | undefined } = {},
+  ): Promise<CarbotiApiResponse> {
+    return this.requestJson(`/api/carboti/messages/${encodePathSegment(messageId)}/trace`, {
+      token: input.token,
+    });
+  }
+
   replayMessage(
     messageId: string,
     input: { token?: string | undefined } = {},
@@ -331,6 +411,31 @@ export class CarbotiClient {
     );
   }
 
+  createArtifactDownloadUrl(
+    artifactId: string,
+    input: { token?: string | undefined; ttlSeconds?: number | undefined } = {},
+  ): Promise<CarbotiApiResponse> {
+    return this.requestJson(
+      `/api/carboti/artifacts/${encodePathSegment(artifactId)}/download-url`,
+      {
+        json: {
+          ttlSeconds: input.ttlSeconds,
+        },
+        method: "POST",
+        token: input.token,
+      },
+    );
+  }
+
+  downloadArtifact(
+    artifactId: string,
+    input: { token?: string | undefined } = {},
+  ): Promise<Response> {
+    return this.requestRaw(`/api/carboti/artifacts/${encodePathSegment(artifactId)}/download`, {
+      token: input.token,
+    });
+  }
+
   async requestJson<T = CarbotiApiResponse>(
     path: string,
     options: CarbotiRequestOptions = {},
@@ -365,6 +470,37 @@ export class CarbotiClient {
 
     return payload as T;
   }
+
+  async requestRaw(path: string, options: CarbotiRequestOptions = {}): Promise<Response> {
+    const headers = new Headers(options.headers);
+    const token = options.token ?? this.token;
+    if (token) headers.set("authorization", `Bearer ${token}`);
+
+    let body = options.body;
+    if (options.json !== undefined) {
+      if (!headers.has("content-type")) headers.set("content-type", "application/json");
+      body = JSON.stringify(options.json);
+    }
+
+    const requestInit: RequestInit = {
+      headers,
+      method: options.method ?? "GET",
+    };
+    if (body !== undefined) requestInit.body = body;
+
+    const response = await this.fetchFn(resolveUrl(this.baseUrl, path), requestInit);
+    if (!response.ok) {
+      const payload = await readJsonResponse(response);
+      throw new CarbotiApiError({
+        body: payload,
+        code: readErrorCode(payload, response.status),
+        message: readErrorMessage(payload, response.status),
+        status: response.status,
+      });
+    }
+
+    return response;
+  }
 }
 
 function normalizeBaseUrl(baseUrl: string): string {
@@ -386,6 +522,7 @@ function connectorRegistrationJson<TKind extends string>(
     config: input.config,
     kind: input.kind,
     name: input.name,
+    secretRefs: input.secretRefs,
     status: input.status,
   };
 }

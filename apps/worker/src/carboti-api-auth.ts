@@ -1,20 +1,28 @@
 import { hashSecret } from "@carboti/auth";
 import { authError, type AppContext } from "./http-utils";
 
-export type CarbotiApiScope =
-  | "*"
-  | "ingest:write"
-  | "objects:read"
-  | "artifacts:read"
-  | "artifacts:write"
-  | "lineage:read"
-  | "processors:invoke"
-  | "processors:read"
-  | "processors:write"
-  | "connectors:read"
-  | "connectors:write"
-  | "replay:write"
-  | "agent:read";
+export const carbotiApiScopes = [
+  "*",
+  "agent:read",
+  "api_clients:read",
+  "api_clients:write",
+  "artifacts:read",
+  "artifacts:write",
+  "connectors:read",
+  "connectors:write",
+  "ingest:write",
+  "lineage:read",
+  "messages:read",
+  "objects:read",
+  "processors:invoke",
+  "processors:read",
+  "processors:write",
+  "replay:write",
+  "secrets:read",
+  "secrets:write",
+] as const;
+
+export type CarbotiApiScope = (typeof carbotiApiScopes)[number];
 
 export type CarbotiApiClient = {
   id: string;

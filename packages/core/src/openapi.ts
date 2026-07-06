@@ -11,6 +11,12 @@ export const carbotiOpenApiDocument = {
       name: "Contract",
     },
     {
+      name: "Administration",
+    },
+    {
+      name: "Security",
+    },
+    {
       name: "Ingest",
     },
     {
@@ -279,6 +285,169 @@ export const carbotiOpenApiDocument = {
         tags: ["Contract"],
       },
     },
+    "/api/carboti/api-clients": {
+      get: {
+        operationId: "listApiClients",
+        responses: {
+          "200": {
+            description: "API clients for the current workspace without token material.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Administration"],
+      },
+      post: {
+        operationId: "createApiClient",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                additionalProperties: false,
+                properties: {
+                  name: {
+                    type: "string",
+                  },
+                  scopes: {
+                    items: {
+                      type: "string",
+                    },
+                    type: "array",
+                  },
+                },
+                required: ["name", "scopes"],
+                type: "object",
+              },
+            },
+          },
+          required: true,
+        },
+        responses: {
+          "201": {
+            description: "API client created. The token is returned once.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Administration"],
+      },
+    },
+    "/api/carboti/api-clients/{clientId}/revoke": {
+      post: {
+        operationId: "revokeApiClient",
+        parameters: [
+          {
+            in: "path",
+            name: "clientId",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "API client revoked.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Administration"],
+      },
+    },
+    "/api/carboti/secrets": {
+      get: {
+        operationId: "listSecretRefs",
+        responses: {
+          "200": {
+            description: "Secret ref metadata without plaintext or ciphertext.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Security"],
+      },
+      post: {
+        operationId: "createSecretRef",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                additionalProperties: false,
+                properties: {
+                  description: {
+                    type: "string",
+                  },
+                  kind: {
+                    enum: ["connector_credential", "processor_signing_key", "generic"],
+                    type: "string",
+                  },
+                  name: {
+                    type: "string",
+                  },
+                  plaintext: {
+                    type: "string",
+                    writeOnly: true,
+                  },
+                },
+                required: ["kind", "name", "plaintext"],
+                type: "object",
+              },
+            },
+          },
+          required: true,
+        },
+        responses: {
+          "201": {
+            description: "Secret ref created and encrypted.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Security"],
+      },
+    },
+    "/api/carboti/secrets/{secretRef}/revoke": {
+      post: {
+        operationId: "revokeSecretRef",
+        parameters: [
+          {
+            in: "path",
+            name: "secretRef",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Secret ref revoked.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Security"],
+      },
+    },
     "/api/carboti/ingest/http": {
       post: {
         operationId: "ingestHttpObject",
@@ -359,6 +528,12 @@ export const carbotiOpenApiDocument = {
                   name: {
                     type: "string",
                   },
+                  secretRefs: {
+                    additionalProperties: {
+                      type: "string",
+                    },
+                    type: "object",
+                  },
                   status: {
                     enum: ["active", "disabled"],
                     type: "string",
@@ -403,6 +578,12 @@ export const carbotiOpenApiDocument = {
                   },
                   name: {
                     type: "string",
+                  },
+                  secretRefs: {
+                    additionalProperties: {
+                      type: "string",
+                    },
+                    type: "object",
                   },
                   status: {
                     enum: ["active", "disabled"],
@@ -590,6 +771,83 @@ export const carbotiOpenApiDocument = {
         tags: ["Evidence"],
       },
     },
+    "/api/carboti/artifacts/{artifactId}/download": {
+      get: {
+        operationId: "downloadArtifact",
+        parameters: [
+          {
+            in: "path",
+            name: "artifactId",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Artifact data as a downloadable response.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Evidence"],
+      },
+    },
+    "/api/carboti/artifacts/{artifactId}/download-url": {
+      post: {
+        operationId: "createArtifactDownloadUrl",
+        parameters: [
+          {
+            in: "path",
+            name: "artifactId",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "201": {
+            description: "Short-lived signed artifact download URL created.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Evidence"],
+      },
+    },
+    "/api/carboti/artifact-downloads/{token}": {
+      get: {
+        operationId: "readSignedArtifactDownload",
+        parameters: [
+          {
+            in: "path",
+            name: "token",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Artifact data authorized by a short-lived signed token.",
+          },
+          "410": {
+            $ref: "#/components/responses/ApiError",
+          },
+        },
+        security: [],
+        tags: ["Evidence"],
+      },
+    },
     "/api/carboti/messages/{messageId}/artifacts": {
       get: {
         operationId: "listMessageArtifacts",
@@ -680,6 +938,33 @@ export const carbotiOpenApiDocument = {
         responses: {
           "200": {
             description: "Lineage edges for a message.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Evidence"],
+      },
+    },
+    "/api/carboti/messages/{messageId}/trace": {
+      get: {
+        operationId: "getMessageTrace",
+        parameters: [
+          {
+            in: "path",
+            name: "messageId",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description:
+              "Operational trace for a message, including objects, artifacts, lineage, runs, deliveries, and audit events.",
           },
         },
         security: [

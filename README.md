@@ -9,6 +9,11 @@ keeps lineage and audit evidence available for downstream systems and agents.
 
 中文版本：[README.zh-CN.md](./README.zh-CN.md)
 
+Readiness docs:
+
+- [Beta readiness checklist](./docs/carboti/beta-readiness.md)
+- [Internal integration guide](./docs/carboti/internal-integration.md)
+
 ## Positioning
 
 `carboti` is not a mail parser, a workflow builder, or a business application.
@@ -108,6 +113,10 @@ Developer-facing packages now include:
 Connector and runtime surfaces:
 
 ```text
+GET  /api/carboti/api-clients
+POST /api/carboti/api-clients
+GET  /api/carboti/secrets
+POST /api/carboti/secrets
 GET  /api/carboti/connectors/manifests
 POST /api/carboti/connectors/sources
 POST /api/carboti/connectors/sources/:sourceId/health
@@ -123,6 +132,14 @@ Agent-facing surfaces:
 POST /api/carboti/mcp
 POST /api/carboti/agent/artifacts/search
 POST /api/carboti/agent/messages/:messageId/context
+```
+
+Output and troubleshooting surfaces:
+
+```text
+GET  /api/carboti/messages/:messageId/trace
+GET  /api/carboti/artifacts/:artifactId/download
+POST /api/carboti/artifacts/:artifactId/download-url
 ```
 
 ## Roadmap

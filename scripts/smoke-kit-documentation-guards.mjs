@@ -41,12 +41,18 @@ export function assertKitDocumentationGuards(context) {
   assert(
     readme.includes("GET /api/carboti/contract") &&
       readme.includes("GET /api/carboti/openapi.json") &&
+      readme.includes("docs/carboti/beta-readiness.md") &&
+      readme.includes("docs/carboti/internal-integration.md") &&
       readme.includes("@carboti/core") &&
       readme.includes("@carboti/sdk") &&
       readme.includes("@carboti/cli") &&
+      readme.includes("POST /api/carboti/api-clients") &&
+      readme.includes("POST /api/carboti/secrets") &&
       readme.includes("GET  /api/carboti/connectors/manifests") &&
       readme.includes("POST /api/carboti/connectors/sources/:sourceId/ingest") &&
       readme.includes("POST /api/carboti/processors/hosted") &&
+      readme.includes("GET  /api/carboti/messages/:messageId/trace") &&
+      readme.includes("POST /api/carboti/artifacts/:artifactId/download-url") &&
       readme.includes("POST /api/carboti/mcp") &&
       readme.includes("source, message, artifact, lineage, processor, and webhook delivery"),
     "README must describe the first carboti contract endpoint and reusable core package.",

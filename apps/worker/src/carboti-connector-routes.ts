@@ -31,6 +31,7 @@ const RegisterConnectorSourceInputSchema = v.object({
   config: v.optional(ConnectorConfigSchema),
   kind: CarbotiSourceKindSchema,
   name: v.string(),
+  secretRefs: v.optional(v.record(v.string(), v.string())),
   status: v.optional(v.picklist(["active", "disabled"])),
 });
 
@@ -38,6 +39,7 @@ const RegisterConnectorSinkInputSchema = v.object({
   config: v.optional(ConnectorConfigSchema),
   kind: CarbotiSinkKindSchema,
   name: v.string(),
+  secretRefs: v.optional(v.record(v.string(), v.string())),
   status: v.optional(v.picklist(["active", "disabled"])),
 });
 
@@ -63,6 +65,12 @@ type SourceRow = {
   status: string;
   updated_at: string;
   workspace_id: string;
+};
+
+type SecretRefRow = {
+  id: string;
+  kind: string;
+  status: string | null;
 };
 
 type HealthCheckRow = {
@@ -167,6 +175,11 @@ async function registerConnectorSource(
   if (invalidConfig) {
     return authError(context, invalidConfig.code, invalidConfig.message, 400);
   }
+  const secretRefs = input.input.secretRefs ?? {};
+  const secretValidation = await validateConnectorSecretRefs(context, input.client, secretRefs);
+  if (!secretValidation.ok) {
+    return authError(context, secretValidation.code, secretValidation.message, 400);
+  }
 
   const now = new Date().toISOString();
   const sourceId = `source:${input.input.kind}:${crypto.randomUUID()}`;
@@ -194,6 +207,7 @@ async function registerConnectorSource(
       JSON.stringify({
         config,
         connectorManifestVersion: "2026-07-06",
+        secretRefs,
       }),
       now,
       now,
@@ -209,6 +223,7 @@ async function registerConnectorSource(
         metadata: {
           connectorKind: input.input.kind,
           manifest,
+          secretRefKeys: Object.keys(secretRefs),
           status: input.input.status ?? "active",
         },
         subject: {
@@ -255,6 +270,11 @@ async function registerConnectorSink(
   if (invalidConfig) {
     return authError(context, invalidConfig.code, invalidConfig.message, 400);
   }
+  const secretRefs = input.input.secretRefs ?? {};
+  const secretValidation = await validateConnectorSecretRefs(context, input.client, secretRefs);
+  if (!secretValidation.ok) {
+    return authError(context, secretValidation.code, secretValidation.message, 400);
+  }
 
   const now = new Date().toISOString();
   const sinkId = `sink:${input.input.kind}:${crypto.randomUUID()}`;
@@ -282,6 +302,7 @@ async function registerConnectorSink(
       JSON.stringify({
         config,
         connectorManifestVersion: "2026-07-06",
+        secretRefs,
       }),
       now,
       now,
@@ -297,6 +318,7 @@ async function registerConnectorSink(
         metadata: {
           connectorKind: input.input.kind,
           manifest,
+          secretRefKeys: Object.keys(secretRefs),
           status: input.input.status ?? "active",
         },
         subject: {
@@ -402,6 +424,7 @@ async function runConnectorSourceHealth(
   }
 
   const config = parseConnectorConfig(source.config_json);
+  const secretRefs = parseConnectorSecretRefs(source.config_json);
   const missingConfigFields = missingRequiredConfigFields(config, manifest);
   const status =
     source.status !== "active"
@@ -421,6 +444,11 @@ async function runConnectorSourceHealth(
         missingConfigFields,
         name: "required_config",
         ok: missingConfigFields.length === 0,
+      },
+      {
+        name: "secret_refs",
+        ok: Object.keys(secretRefs).length > 0 || manifest.authModes.includes("none"),
+        secretRefKeys: Object.keys(secretRefs),
       },
       {
         mode: manifest.healthCheck.mode,
@@ -831,6 +859,56 @@ function validateConnectorConfig(
   return null;
 }
 
+async function validateConnectorSecretRefs(
+  context: AppContext,
+  client: CarbotiApiClient,
+  secretRefs: Record<string, string>,
+): Promise<
+  | {
+      ok: true;
+    }
+  | {
+      code: "connector_secret_ref_invalid" | "connector_secret_ref_not_found";
+      message: string;
+      ok: false;
+    }
+> {
+  for (const [key, secretRef] of Object.entries(secretRefs)) {
+    if (!secretRef.startsWith("secret:")) {
+      return {
+        code: "connector_secret_ref_invalid",
+        message: `Connector secret ref "${key}" must reference a Carboti secret ref.`,
+        ok: false,
+      };
+    }
+
+    const row = await context.env.DB.prepare(
+      `
+        SELECT id, kind, status
+        FROM carboti_secret_refs
+        WHERE id = ?
+          AND workspace_id = ?
+          AND kind = ?
+          AND (status IS NULL OR status = 'active')
+        LIMIT 1
+      `,
+    )
+      .bind(secretRef, client.workspaceId, "connector_credential")
+      .first<SecretRefRow>();
+    if (!row) {
+      return {
+        code: "connector_secret_ref_not_found",
+        message: `Connector secret ref "${key}" was not found or is not active.`,
+        ok: false,
+      };
+    }
+  }
+
+  return {
+    ok: true,
+  };
+}
+
 function missingRequiredConfigFields(
   config: Record<string, unknown>,
   manifest: CarbotiConnectorManifest,
@@ -1127,6 +1205,17 @@ function parseConnectorConfig(value: string | null): Record<string, unknown> {
   const parsed = parseJsonRecord(value);
   if (isUnknownRecord(parsed.config)) return parsed.config;
   return {};
+}
+
+function parseConnectorSecretRefs(value: string | null): Record<string, string> {
+  const parsed = parseJsonRecord(value);
+  if (!isUnknownRecord(parsed.secretRefs)) return {};
+  return Object.fromEntries(
+    Object.entries(parsed.secretRefs).filter((entry): entry is [string, string] => {
+      const [key, secretRef] = entry;
+      return typeof key === "string" && typeof secretRef === "string";
+    }),
+  );
 }
 
 function parseJsonRecord(value: string | null): Record<string, unknown> {

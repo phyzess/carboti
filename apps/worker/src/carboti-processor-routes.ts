@@ -809,6 +809,7 @@ async function readProcessorSigningSecret(
       WHERE id = ?
         AND workspace_id = ?
         AND kind = ?
+        AND (status IS NULL OR status = 'active')
       LIMIT 1
     `,
   )

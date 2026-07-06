@@ -12,6 +12,7 @@ export type CarbotiCliIo = {
 export type CarbotiCliEnv = {
   CARBOTI_API_TOKEN?: string | undefined;
   CARBOTI_BASE_URL?: string | undefined;
+  [key: string]: string | undefined;
 };
 
 export async function runCarbotiCli(
@@ -26,6 +27,10 @@ export async function runCarbotiCli(
   const [command, ...args] = argv;
   try {
     switch (command) {
+      case "api-client":
+        return await runApiClient(args, env, io);
+      case "download":
+        return await runDownload(args, env, io);
       case "init":
         return await runInit(args, env, io);
       case "ingest":
@@ -34,6 +39,8 @@ export async function runCarbotiCli(
         return await runInspect(args, env, io);
       case "replay":
         return await runReplay(args, env, io);
+      case "secret":
+        return await runSecret(args, env, io);
       case "export":
         return await runExport(args, env, io);
       case "--help":
@@ -50,6 +57,34 @@ export async function runCarbotiCli(
     writeCliError(io, error);
     return 1;
   }
+}
+
+async function runApiClient(args: string[], env: CarbotiCliEnv, io: CarbotiCliIo): Promise<number> {
+  const [subcommand, ...rest] = args;
+  const flags = parseFlags(rest);
+  const client = createClient(env, flags);
+
+  if (subcommand === "list") {
+    writeJson(io, await client.listApiClients());
+    return 0;
+  }
+
+  if (subcommand === "create") {
+    const name = requiredFlag(flags, "name");
+    const scopes = requiredFlag(flags, "scopes")
+      .split(",")
+      .map((scope) => scope.trim())
+      .filter(Boolean);
+    writeJson(io, await client.createApiClient({ name, scopes }));
+    return 0;
+  }
+
+  if (subcommand === "revoke") {
+    writeJson(io, await client.revokeApiClient(requiredFlag(flags, "id")));
+    return 0;
+  }
+
+  throw new Error("Usage: carboti api-client <list|create|revoke>");
 }
 
 async function runInit(args: string[], env: CarbotiCliEnv, io: CarbotiCliIo): Promise<number> {
@@ -77,11 +112,23 @@ async function runIngest(args: string[], env: CarbotiCliEnv, io: CarbotiCliIo): 
   return 0;
 }
 
+async function runDownload(args: string[], env: CarbotiCliEnv, io: CarbotiCliIo): Promise<number> {
+  const [target, id, ...rest] = args;
+  if (target !== "artifact" || !id) {
+    throw new Error("Usage: carboti download artifact <artifactId>");
+  }
+
+  const flags = parseFlags(rest);
+  const response = await createClient(env, flags).downloadArtifact(id);
+  io.stdout.write(await response.text());
+  return 0;
+}
+
 async function runInspect(args: string[], env: CarbotiCliEnv, io: CarbotiCliIo): Promise<number> {
   const [target, id, ...rest] = args;
   if (!target || !id) {
     throw new Error(
-      "Usage: carboti inspect <object|artifact|message-artifacts|message-lineage> <id>",
+      "Usage: carboti inspect <object|artifact|message-artifacts|message-lineage|message-trace> <id>",
     );
   }
 
@@ -96,10 +143,12 @@ async function runInspect(args: string[], env: CarbotiCliEnv, io: CarbotiCliIo):
           ? await client.listMessageArtifacts(id)
           : target === "message-lineage"
             ? await client.getMessageLineage(id)
-            : null;
+            : target === "message-trace"
+              ? await client.getMessageTrace(id)
+              : null;
   if (!result) {
     throw new Error(
-      "Inspect target must be object, artifact, message-artifacts, or message-lineage.",
+      "Inspect target must be object, artifact, message-artifacts, message-lineage, or message-trace.",
     );
   }
 
@@ -115,6 +164,44 @@ async function runReplay(args: string[], env: CarbotiCliEnv, io: CarbotiCliIo): 
   const result = await createClient(env, flags).replayMessage(messageId);
   writeJson(io, result);
   return 0;
+}
+
+async function runSecret(args: string[], env: CarbotiCliEnv, io: CarbotiCliIo): Promise<number> {
+  const [subcommand, ...rest] = args;
+  const flags = parseFlags(rest);
+  const client = createClient(env, flags);
+
+  if (subcommand === "list") {
+    writeJson(io, await client.listSecrets());
+    return 0;
+  }
+
+  if (subcommand === "create") {
+    const valueEnv = flags["value-env"];
+    const plaintext = valueEnv
+      ? env[valueEnv]
+      : new TextDecoder().decode(await readStdin(io.stdin));
+    if (!plaintext) {
+      throw new Error("Provide a secret value through --value-env <ENV_NAME> or stdin.");
+    }
+    writeJson(
+      io,
+      await client.createSecret({
+        description: flags.description,
+        kind: secretKindFlag(flags.kind),
+        name: requiredFlag(flags, "name"),
+        plaintext,
+      }),
+    );
+    return 0;
+  }
+
+  if (subcommand === "revoke") {
+    writeJson(io, await client.revokeSecret(requiredFlag(flags, "id")));
+    return 0;
+  }
+
+  throw new Error("Usage: carboti secret <list|create|revoke>");
 }
 
 async function runExport(args: string[], env: CarbotiCliEnv, io: CarbotiCliIo): Promise<number> {
@@ -169,6 +256,25 @@ function parseFlags(args: string[]): Record<string, string | undefined> {
   return flags;
 }
 
+function requiredFlag(flags: Record<string, string | undefined>, key: string): string {
+  const value = flags[key];
+  if (!value || value === "true") throw new Error(`Missing required --${key}.`);
+  return value;
+}
+
+function secretKindFlag(
+  value: string | undefined,
+): "connector_credential" | "processor_signing_key" | "generic" {
+  if (
+    value === "connector_credential" ||
+    value === "processor_signing_key" ||
+    value === "generic"
+  ) {
+    return value;
+  }
+  return "generic";
+}
+
 async function readStdin(stdin: NodeJS.ReadStream): Promise<Uint8Array> {
   const chunks: Uint8Array[] = [];
   for await (const chunk of stdin) {
@@ -199,13 +305,21 @@ function writeHelp(io: CarbotiCliIo): void {
   io.stdout.write(`carboti <command>
 
 Commands:
+  api-client list                       List API clients
+  api-client create --name n --scopes s Create an API client and print its one-time token
+  api-client revoke --id <clientId>     Revoke an API client
+  download artifact <artifactId>        Download artifact data
   init                                  Print local CLI configuration template
   ingest --file <path> [--filename n]   Ingest a file, or stdin when --file is omitted
   inspect object <id>                   Fetch object evidence
   inspect artifact <id>                 Fetch artifact evidence
   inspect message-artifacts <id>        List message artifacts
   inspect message-lineage <id>          Fetch message lineage
+  inspect message-trace <id>            Fetch message operational trace
   replay <messageId>                    Replay processing from preserved raw input
+  secret list                           List secret refs without secret material
+  secret create --name n --kind k       Create a secret ref from stdin or --value-env
+  secret revoke --id <secretRef>        Revoke a secret ref
   export artifact <artifactId>          Print artifact JSON
 
 Flags:

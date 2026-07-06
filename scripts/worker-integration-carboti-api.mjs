@@ -22,6 +22,8 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
   );
   assert(
     openApi.paths["/api/carboti/ingest/http"].post.operationId === "ingestHttpObject" &&
+      openApi.paths["/api/carboti/api-clients"].post.operationId === "createApiClient" &&
+      openApi.paths["/api/carboti/secrets"].post.operationId === "createSecretRef" &&
       openApi.paths["/api/carboti/processors/external"].post.operationId ===
         "createExternalProcessor" &&
       openApi.paths["/api/carboti/processors/hosted"].post.operationId ===
@@ -30,6 +32,10 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
         "listConnectorManifests" &&
       openApi.paths["/api/carboti/connectors/sources/{sourceId}/ingest"].post.operationId ===
         "ingestConnectorObject" &&
+      openApi.paths["/api/carboti/messages/{messageId}/trace"].get.operationId ===
+        "getMessageTrace" &&
+      openApi.paths["/api/carboti/artifacts/{artifactId}/download-url"].post.operationId ===
+        "createArtifactDownloadUrl" &&
       openApi.paths["/api/carboti/processor-deliveries/{deliveryId}/retry"].post.operationId ===
         "retryProcessorDelivery" &&
       openApi.paths["/api/carboti/mcp"].post.operationId === "carbotiMcp",
@@ -48,6 +54,86 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
   );
 
   await seedApiClient(env);
+
+  const createdClientResponse = await client.post(
+    "/api/carboti/api-clients",
+    JSON.stringify({
+      name: "Read-only integration client",
+      scopes: ["artifacts:read", "messages:read"],
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(createdClientResponse, 201);
+  const createdClient = await createdClientResponse.json();
+  assert(
+    createdClient.token.startsWith("cbt_") &&
+      createdClient.apiClient.scopes.join(",") === "artifacts:read,messages:read",
+    "API client management creates a scoped token and returns it once",
+  );
+
+  const apiClients = await client.json("/api/carboti/api-clients", {
+    headers: apiHeaders,
+  });
+  assert(
+    apiClients.apiClients.some((apiClient) => apiClient.id === createdClient.apiClient.id) &&
+      !JSON.stringify(apiClients).includes(createdClient.token),
+    "API client listing exposes metadata without token material",
+  );
+
+  const revokeClientResponse = await client.post(
+    `/api/carboti/api-clients/${createdClient.apiClient.id}/revoke`,
+    "",
+    {
+      headers: apiHeaders,
+    },
+  );
+  await expectStatus(revokeClientResponse, 200);
+  await expectApiError(
+    await client.request("/api/carboti/messages/non-existent/trace", {
+      headers: {
+        authorization: `Bearer ${createdClient.token}`,
+      },
+    }),
+    401,
+    "invalid_api_token",
+  );
+
+  const secretResponse = await client.post(
+    "/api/carboti/secrets",
+    JSON.stringify({
+      description: "Integration connector credential",
+      kind: "connector_credential",
+      name: "R2 integration credential",
+      plaintext: "integration-connector-secret",
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(secretResponse, 201);
+  const connectorSecret = await secretResponse.json();
+  assert(
+    connectorSecret.secret.id.startsWith("secret:connector_credential:") &&
+      connectorSecret.secret.status === "active",
+    "secret refs can store connector credentials without returning plaintext",
+  );
+
+  const secretList = await client.json("/api/carboti/secrets", {
+    headers: apiHeaders,
+  });
+  assert(
+    secretList.secrets.some((secret) => secret.id === connectorSecret.secret.id) &&
+      !JSON.stringify(secretList).includes("integration-connector-secret"),
+    "secret listing exposes metadata without secret material",
+  );
 
   const connectorManifests = await client.json("/api/carboti/connectors/manifests", {
     headers: apiHeaders,
@@ -104,6 +190,9 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
       },
       kind: "r2",
       name: "Incoming R2 bucket",
+      secretRefs: {
+        credential: connectorSecret.secret.id,
+      },
     }),
     {
       headers: {
@@ -154,8 +243,10 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
   const connectorHealth = await connectorHealthResponse.json();
   assert(
     connectorHealth.health.status === "healthy" &&
-      connectorHealth.health.details.checks.some((check) => check.name === "remote_probe"),
-    "connector health check records operational status without requiring inline secrets",
+      connectorHealth.health.details.checks.some(
+        (check) => check.name === "secret_refs" && check.secretRefKeys.includes("credential"),
+      ),
+    "connector health check records operational status and credential refs",
   );
 
   const connectorHealthRead = await client.json(
@@ -239,6 +330,86 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
       .sort()
       .join(",") === "normalized_to,processed_into,processed_into",
     "connector ingest records raw-to-normalized and normalized-to-artifact lineage",
+  );
+
+  const connectorTrace = await client.json(
+    `/api/carboti/messages/${connectorIngest.messageId}/trace`,
+    {
+      headers: apiHeaders,
+    },
+  );
+  assert(
+    connectorTrace.trace.summary.objectCount >= 3 &&
+      connectorTrace.trace.summary.artifactCount === 2 &&
+      connectorTrace.trace.audits.some(
+        (event) => event.action === "carboti.connector.ingest.accepted",
+      ),
+    "message trace returns objects, artifacts, lineage, runs, deliveries, and audit context",
+  );
+
+  const connectorDownloadResponse = await client.request(
+    `/api/carboti/artifacts/${connectorNormalized.id}/download`,
+    {
+      headers: apiHeaders,
+    },
+  );
+  await expectStatus(connectorDownloadResponse, 200);
+  assert(
+    (await connectorDownloadResponse.text()).includes("rawObjectRef"),
+    "artifact download returns artifact data as a downloadable response",
+  );
+
+  const connectorDownloadUrlResponse = await client.post(
+    `/api/carboti/artifacts/${connectorNormalized.id}/download-url`,
+    JSON.stringify({
+      ttlSeconds: 60,
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(connectorDownloadUrlResponse, 201);
+  const connectorDownloadUrl = await connectorDownloadUrlResponse.json();
+  const signedDownload = await client.request(connectorDownloadUrl.url);
+  await expectStatus(signedDownload, 200);
+  assert(
+    (await signedDownload.text()).includes("sourceMetadata"),
+    "signed artifact download URL works without bearer auth",
+  );
+
+  const revokeSecretResponse = await client.post(
+    `/api/carboti/secrets/${connectorSecret.secret.id}/revoke`,
+    "",
+    {
+      headers: apiHeaders,
+    },
+  );
+  await expectStatus(revokeSecretResponse, 200);
+  await expectApiError(
+    await client.post(
+      "/api/carboti/connectors/sources",
+      JSON.stringify({
+        config: {
+          bucket: "revoked-secret-test",
+        },
+        kind: "r2",
+        name: "Revoked secret source",
+        secretRefs: {
+          credential: connectorSecret.secret.id,
+        },
+      }),
+      {
+        headers: {
+          ...apiHeaders,
+          "content-type": "application/json",
+        },
+      },
+    ),
+    400,
+    "connector_secret_ref_not_found",
   );
 
   const processorRuntimes = await client.json("/api/carboti/processor-runtimes", {
@@ -1021,11 +1192,14 @@ async function seedApiClient(env) {
       "Integration API client",
       hashSecret(apiToken),
       JSON.stringify([
+        "api_clients:read",
+        "api_clients:write",
         "ingest:write",
         "objects:read",
         "artifacts:read",
         "artifacts:write",
         "lineage:read",
+        "messages:read",
         "connectors:read",
         "connectors:write",
         "processors:invoke",
@@ -1033,6 +1207,8 @@ async function seedApiClient(env) {
         "processors:write",
         "replay:write",
         "agent:read",
+        "secrets:read",
+        "secrets:write",
       ]),
       "active",
       now,

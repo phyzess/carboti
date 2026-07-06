@@ -6,6 +6,11 @@
 
 English version: [README.md](./README.md)
 
+Readiness docs:
+
+- [Beta readiness checklist](./docs/carboti/beta-readiness.md)
+- [Internal integration guide](./docs/carboti/internal-integration.md)
+
 ## 定位
 
 `carboti` 不是邮件解析 SaaS、不是通用工作流编排器，也不是业务应用。它更像一个可信的数据入口：
@@ -100,6 +105,10 @@ GET /api/carboti/openapi.json
 面向 connector 和 runtime 的入口：
 
 ```text
+GET  /api/carboti/api-clients
+POST /api/carboti/api-clients
+GET  /api/carboti/secrets
+POST /api/carboti/secrets
 GET  /api/carboti/connectors/manifests
 POST /api/carboti/connectors/sources
 POST /api/carboti/connectors/sources/:sourceId/health
@@ -115,6 +124,14 @@ POST /api/carboti/processors/hosted
 POST /api/carboti/mcp
 POST /api/carboti/agent/artifacts/search
 POST /api/carboti/agent/messages/:messageId/context
+```
+
+面向输出和排障的入口：
+
+```text
+GET  /api/carboti/messages/:messageId/trace
+GET  /api/carboti/artifacts/:artifactId/download
+POST /api/carboti/artifacts/:artifactId/download-url
 ```
 
 ## 路线图

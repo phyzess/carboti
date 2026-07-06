@@ -90,6 +90,7 @@ carboti_lineage_edges
 carboti_webhook_endpoints
 carboti_webhook_deliveries
 carboti_api_clients
+carboti_secret_refs
 ```
 
 Raw bytes still live in R2. D1 stores metadata, lineage, delivery status, and
@@ -201,7 +202,20 @@ The first product slice is:
 3. Add policy gate and audit around agent actions.
 4. Add short-lived signed artifact access for agent retrieval.
 
-### Phase 6: Connectors and Hosted Processors
+### Phase 6: Beta Readiness for Internal Integration
+
+1. Add scoped API client lifecycle APIs.
+2. Add encrypted secret reference lifecycle APIs.
+3. Allow connectors to bind credentials through `secretRefs` instead of inline
+   secrets.
+4. Add message trace for objects, artifacts, lineage, processor runs,
+   deliveries, and audits.
+5. Add direct and short-lived signed artifact downloads.
+6. Document the internal integration loop and deployment baseline.
+7. Extend smoke, package interface, and worker integration guards for these
+   surfaces.
+
+### Phase 7: Connectors and Hosted Processors
 
 1. Add built-in connector manifests for Gmail, Microsoft Graph, IMAP,
    SES/Postmark/Mailgun, S3, and R2.

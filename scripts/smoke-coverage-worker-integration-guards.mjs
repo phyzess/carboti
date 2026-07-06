@@ -13,11 +13,18 @@ export function assertWorkerIntegrationCoverageGuards(context) {
       workerIntegration.includes("/api/source-files") &&
       workerIntegration.includes("/api/carboti/openapi.json") &&
       workerIntegration.includes("/api/carboti/ingest/http") &&
+      workerIntegration.includes("/api/carboti/api-clients") &&
+      workerIntegration.includes("API client management creates") &&
+      workerIntegration.includes("/api/carboti/secrets") &&
+      workerIntegration.includes("secret refs can store connector credentials") &&
       workerIntegration.includes("/api/carboti/connectors/manifests") &&
       workerIntegration.includes("/api/carboti/connectors/sources") &&
       workerIntegration.includes("/api/carboti/connectors/sinks") &&
       workerIntegration.includes("connector_secret_inline_not_allowed") &&
+      workerIntegration.includes("connector_secret_ref_not_found") &&
       workerIntegration.includes("raw-connectors/r2/") &&
+      workerIntegration.includes("/download-url") &&
+      workerIntegration.includes("/trace") &&
       workerIntegration.includes("/api/carboti/agent/artifacts/search") &&
       workerIntegration.includes("/api/carboti/mcp") &&
       workerIntegration.includes("/api/carboti/messages/") &&

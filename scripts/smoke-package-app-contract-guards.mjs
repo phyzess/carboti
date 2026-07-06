@@ -44,6 +44,12 @@ export function assertPackageAppContractGuards(context) {
   assert(
     workerSources.includes("requireCarbotiApiClient") &&
       workerSources.includes('app.get("/api/carboti/openapi.json"') &&
+      workerSources.includes('app.get("/api/carboti/api-clients"') &&
+      workerSources.includes('app.post("/api/carboti/api-clients"') &&
+      workerSources.includes('app.post("/api/carboti/api-clients/:clientId/revoke"') &&
+      workerSources.includes('app.get("/api/carboti/secrets"') &&
+      workerSources.includes('app.post("/api/carboti/secrets"') &&
+      workerSources.includes('app.post("/api/carboti/secrets/:secretRef/revoke"') &&
       workerSources.includes('app.post("/api/carboti/ingest/http"') &&
       workerSources.includes('app.get("/api/carboti/connectors/manifests"') &&
       workerSources.includes('app.post("/api/carboti/connectors/sources"') &&
@@ -52,7 +58,11 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes('app.post("/api/carboti/connectors/sources/:sourceId/ingest"') &&
       workerSources.includes('app.get("/api/carboti/objects/:objectId"') &&
       workerSources.includes('app.get("/api/carboti/artifacts/:artifactId"') &&
+      workerSources.includes('app.get("/api/carboti/artifacts/:artifactId/download"') &&
+      workerSources.includes('app.post("/api/carboti/artifacts/:artifactId/download-url"') &&
+      workerSources.includes('app.get("/api/carboti/artifact-downloads/:token"') &&
       workerSources.includes('app.get("/api/carboti/messages/:messageId/lineage"') &&
+      workerSources.includes('app.get("/api/carboti/messages/:messageId/trace"') &&
       workerSources.includes('app.post("/api/carboti/messages/:messageId/artifacts"') &&
       workerSources.includes('app.post("/api/carboti/messages/:messageId/replay"') &&
       workerSources.includes('app.get("/api/carboti/processor-runtimes"') &&
@@ -63,13 +73,18 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes('app.post("/api/carboti/mcp"') &&
       workerSources.includes('app.post("/api/carboti/agent/artifacts/search"') &&
       workerSources.includes('app.post("/api/carboti/agent/artifacts/:artifactId/access"') &&
+      workerSources.includes('"api_clients:read"') &&
+      workerSources.includes('"api_clients:write"') &&
       workerSources.includes('"artifacts:write"') &&
       workerSources.includes('"connectors:read"') &&
       workerSources.includes('"connectors:write"') &&
+      workerSources.includes('"messages:read"') &&
       workerSources.includes('"processors:invoke"') &&
       workerSources.includes('"processors:read"') &&
       workerSources.includes('"processors:write"') &&
       workerSources.includes('"agent:read"') &&
+      workerSources.includes('"secrets:read"') &&
+      workerSources.includes('"secrets:write"') &&
       workerSources.includes("carboti_api_clients") &&
       workerSources.includes("carboti_connector_health_checks") &&
       workerSources.includes("carboti_processor_runs") &&
@@ -77,12 +92,18 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes("carboti_webhook_deliveries") &&
       workerSources.includes("carboti_secret_refs") &&
       workerSources.includes("carboti.artifact.submitted") &&
+      workerSources.includes("carboti.api_client.created") &&
+      workerSources.includes("carboti.api_client.revoked") &&
+      workerSources.includes("carboti.artifact.download_url.created") &&
+      workerSources.includes("carboti.artifact.signed_downloaded") &&
       workerSources.includes("carboti.connector.health.checked") &&
       workerSources.includes("carboti.connector.ingest.accepted") &&
       workerSources.includes("carboti.connector.sink.created") &&
       workerSources.includes("carboti.connector.source.created") &&
       workerSources.includes("carboti.processor.invoked") &&
       workerSources.includes("carboti.processor.hosted.created") &&
+      workerSources.includes("carboti.secret.created") &&
+      workerSources.includes("carboti.secret.revoked") &&
       workerSources.includes("x-carboti-signature") &&
       workerSources.includes("capabilityManifest") &&
       workerSources.includes("carbotiConnectorManifests") &&
