@@ -1,5 +1,11 @@
 import { createAuditEvent } from "@carboti/audit";
-import { CarbotiArtifactKindSchema } from "@carboti/core";
+import {
+  CarbotiArtifactKindSchema,
+  CarbotiObjectKindSchema,
+  CarbotiProcessorCapabilityManifestSchema,
+  normalizeCarbotiProcessorCapabilityManifest,
+  type CarbotiProcessorCapabilityManifest,
+} from "@carboti/core";
 import type { Hono } from "hono";
 import * as v from "valibot";
 import { prepareAuditInsert } from "./audit-store";
@@ -11,6 +17,7 @@ import {
 import { authError, parseRequestJson, type AppContext } from "./http-utils";
 
 const CreateExternalProcessorInputSchema = v.object({
+  capabilityManifest: v.optional(CarbotiProcessorCapabilityManifestSchema),
   endpointUrl: v.pipe(v.string(), v.url()),
   name: v.string(),
   signingSecret: v.pipe(v.string(), v.minLength(16)),
@@ -118,6 +125,9 @@ async function createExternalProcessor(
   const processorId = `processor:external:${crypto.randomUUID()}`;
   const endpointId = endpointIdFor(processorId);
   const timeoutSeconds = Math.min(Math.max(input.input.timeoutSeconds ?? 30, 1), 60);
+  const capabilityManifest = normalizeCarbotiProcessorCapabilityManifest(
+    input.input.capabilityManifest,
+  );
 
   await context.env.DB.batch([
     context.env.DB.prepare(
@@ -146,6 +156,7 @@ async function createExternalProcessor(
       "active",
       JSON.stringify({
         apiClientId: input.client.id,
+        capabilityManifest,
         signingSecret: input.input.signingSecret,
       }),
       now,
@@ -182,6 +193,7 @@ async function createExternalProcessor(
           kind: "system",
         },
         metadata: {
+          capabilityManifest,
           endpointId,
           endpointUrl: input.input.endpointUrl,
           timeoutSeconds,
@@ -196,6 +208,7 @@ async function createExternalProcessor(
 
   return context.json(
     {
+      capabilityManifest,
       endpointId,
       endpointUrl: input.input.endpointUrl,
       kind: "external_webhook",
@@ -237,17 +250,76 @@ async function invokeExternalProcessor(
     return authError(context, "message_not_found", "Message was not found.", 404);
   }
 
+  const capabilityManifest = config.capabilityManifest;
   const now = new Date().toISOString();
   const attemptCount = input.attemptCount ?? 1;
   const processorRunId = crypto.randomUUID();
   const deliveryId = crypto.randomUUID();
   const endpointId = endpointIdFor(processor.id);
+  if (!capabilityManifest.permissions.includes("read:message")) {
+    await recordProcessorFailure(context, {
+      client: input.client,
+      deliveryId,
+      endpointId,
+      errorMessage: "Processor capability manifest does not allow read:message.",
+      attemptCount,
+      inputObjectId: processorInput.id,
+      messageId: input.messageId,
+      now,
+      processorId: processor.id,
+      processorRunId,
+      retryOfDeliveryId: input.retryOfDeliveryId ?? null,
+      responseStatus: null,
+    });
+    return authError(
+      context,
+      "processor_input_not_allowed",
+      "Processor is not allowed to read this message.",
+      409,
+    );
+  }
+
+  const inputObjectKind = v.safeParse(CarbotiObjectKindSchema, processorInput.kind);
+  if (
+    !inputObjectKind.success ||
+    !capabilityManifest.inputObjectKinds.includes(inputObjectKind.output)
+  ) {
+    await recordProcessorFailure(context, {
+      client: input.client,
+      deliveryId,
+      endpointId,
+      errorMessage: `Processor capability manifest does not allow input object kind "${processorInput.kind}".`,
+      attemptCount,
+      inputObjectId: processorInput.id,
+      messageId: input.messageId,
+      now,
+      processorId: processor.id,
+      processorRunId,
+      retryOfDeliveryId: input.retryOfDeliveryId ?? null,
+      responseStatus: null,
+    });
+    return authError(
+      context,
+      "processor_input_not_allowed",
+      "Processor is not allowed to read this input object kind.",
+      409,
+    );
+  }
+
   const payload = {
-    artifacts: await readProcessorInputArtifacts(context, input.client, input.messageId),
+    artifacts: capabilityManifest.permissions.includes("read:artifacts")
+      ? await readProcessorInputArtifacts(
+          context,
+          input.client,
+          input.messageId,
+          capabilityManifest,
+        )
+      : [],
+    capabilityManifest,
     inputObject: {
       data: parseDataJson(processorInput.data_json),
       id: processorInput.id,
-      kind: processorInput.kind,
+      kind: inputObjectKind.output,
       objectKey: processorInput.object_key,
     },
     messageId: input.messageId,
@@ -329,9 +401,32 @@ async function invokeExternalProcessor(
     return authError(context, "processor_response_invalid", responseBody.message, 502);
   }
 
+  const capabilityViolation = findOutputArtifactCapabilityViolation(
+    responseBody.value,
+    capabilityManifest,
+  );
+  if (capabilityViolation) {
+    await recordProcessorFailure(context, {
+      client: input.client,
+      deliveryId,
+      endpointId,
+      errorMessage: capabilityViolation,
+      attemptCount,
+      inputObjectId: processorInput.id,
+      messageId: input.messageId,
+      now,
+      processorId: processor.id,
+      processorRunId,
+      retryOfDeliveryId: input.retryOfDeliveryId ?? null,
+      responseStatus: response.status,
+    });
+    return authError(context, "processor_capability_violation", capabilityViolation, 502);
+  }
+
   await recordProcessorSuccess(context, {
     artifacts: responseBody.value.artifacts,
     attemptCount,
+    capabilityManifest,
     client: input.client,
     deliveryId,
     endpointId,
@@ -468,6 +563,7 @@ async function readProcessorInputArtifacts(
   context: AppContext,
   client: CarbotiApiClient,
   messageId: string,
+  capabilityManifest: CarbotiProcessorCapabilityManifest,
 ): Promise<Array<Record<string, unknown>>> {
   const result = await context.env.DB.prepare(
     `
@@ -482,11 +578,23 @@ async function readProcessorInputArtifacts(
     .bind(client.workspaceId, messageId)
     .all<ProcessorArtifactRow>();
 
-  return result.results.map((artifact) => ({
-    data: parseDataJson(artifact.data_json),
-    id: artifact.id,
-    kind: artifact.kind,
-  }));
+  return result.results.flatMap((artifact) => {
+    const artifactKind = v.safeParse(CarbotiArtifactKindSchema, artifact.kind);
+    if (
+      !artifactKind.success ||
+      !capabilityManifest.inputArtifactKinds.includes(artifactKind.output)
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        data: parseDataJson(artifact.data_json),
+        id: artifact.id,
+        kind: artifactKind.output,
+      },
+    ];
+  });
 }
 
 async function recordProcessorSuccess(
@@ -494,6 +602,7 @@ async function recordProcessorSuccess(
   input: {
     artifacts: ExternalProcessorArtifact[];
     attemptCount: number;
+    capabilityManifest: CarbotiProcessorCapabilityManifest;
     client: CarbotiApiClient;
     deliveryId: string;
     endpointId: string;
@@ -683,6 +792,7 @@ async function recordProcessorSuccess(
         },
         metadata: {
           artifactCount: input.artifacts.length,
+          capabilityManifest: input.capabilityManifest,
           deliveryId: input.deliveryId,
           inputObjectId: input.inputObject.id,
           processorId: input.processorId,
@@ -830,6 +940,18 @@ async function readProcessorResponse(response: Response): Promise<
   };
 }
 
+function findOutputArtifactCapabilityViolation(
+  response: ExternalProcessorResponse,
+  capabilityManifest: CarbotiProcessorCapabilityManifest,
+): string | null {
+  const invalidArtifact = response.artifacts.find(
+    (artifact) => !capabilityManifest.outputArtifactKinds.includes(artifact.kind),
+  );
+  if (!invalidArtifact) return null;
+
+  return `Processor capability manifest does not allow output artifact kind "${invalidArtifact.kind}".`;
+}
+
 async function safeResponseText(response: Response): Promise<string> {
   const text = await readResponseTextLimited(response, 1000);
   return text || `HTTP ${response.status}`;
@@ -891,23 +1013,46 @@ function toHex(bytes: Uint8Array): string {
 }
 
 function parseProcessorConfig(value: string | null): {
+  capabilityManifest: CarbotiProcessorCapabilityManifest;
   signingSecret: string | null;
 } {
-  if (!value) return { signingSecret: null };
+  if (!value) {
+    return {
+      capabilityManifest: normalizeCarbotiProcessorCapabilityManifest(),
+      signingSecret: null,
+    };
+  }
   try {
     const parsed: unknown = JSON.parse(value);
-    if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      "signingSecret" in parsed &&
-      typeof parsed.signingSecret === "string"
-    ) {
-      return { signingSecret: parsed.signingSecret };
+    const record = toUnknownRecord(parsed);
+    if (!record) {
+      return {
+        capabilityManifest: normalizeCarbotiProcessorCapabilityManifest(),
+        signingSecret: null,
+      };
     }
-    return { signingSecret: null };
+
+    return {
+      capabilityManifest: readCapabilityManifest(record.capabilityManifest),
+      signingSecret: typeof record.signingSecret === "string" ? record.signingSecret : null,
+    };
   } catch {
-    return { signingSecret: null };
+    return {
+      capabilityManifest: normalizeCarbotiProcessorCapabilityManifest(),
+      signingSecret: null,
+    };
   }
+}
+
+function readCapabilityManifest(value: unknown): CarbotiProcessorCapabilityManifest {
+  const parsed = v.safeParse(CarbotiProcessorCapabilityManifestSchema, value ?? {});
+  if (!parsed.success) return normalizeCarbotiProcessorCapabilityManifest();
+  return normalizeCarbotiProcessorCapabilityManifest(parsed.output);
+}
+
+function toUnknownRecord(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
 }
 
 function parseDataJson(value: string | null): unknown {

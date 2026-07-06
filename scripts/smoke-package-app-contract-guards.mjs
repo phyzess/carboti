@@ -61,6 +61,10 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes("carboti.artifact.submitted") &&
       workerSources.includes("carboti.processor.invoked") &&
       workerSources.includes("x-carboti-signature") &&
+      workerSources.includes("capabilityManifest") &&
+      workerSources.includes("processor_capability_violation") &&
+      workerSources.includes("outputArtifactKinds") &&
+      workerSources.includes("inputArtifactKinds") &&
       workerSources.includes("retry_of_delivery_id") &&
       workerSources.includes("HMAC") &&
       workerSources.includes("carbotiRawHttpObjectKey") &&

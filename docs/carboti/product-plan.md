@@ -185,6 +185,7 @@ The first product slice is:
 5. Record processor runs.
 6. Validate returned artifacts.
 7. Retry and log delivery failures.
+8. Enforce processor capability manifests for allowed inputs and outputs.
 
 ### Phase 4: Developer Surface
 
@@ -205,4 +206,4 @@ The first product slice is:
 3. IMAP.
 4. SES/Postmark/Mailgun inbound webhooks.
 5. Hosted processor runtime.
-6. Capability manifest and sandboxing.
+6. Sandboxing for hosted processors.

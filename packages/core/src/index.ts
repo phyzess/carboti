@@ -36,6 +36,12 @@ export const carbotiProcessorKinds = ["builtin", "external_webhook", "hosted", "
 
 export const carbotiSinkKinds = ["api_pull", "webhook", "r2", "s3", "download", "queue"] as const;
 
+export const carbotiProcessorPermissions = [
+  "read:message",
+  "read:artifacts",
+  "write:artifacts",
+] as const;
+
 export const carbotiJobStatuses = [
   "queued",
   "processing",
@@ -52,6 +58,7 @@ export const CarbotiObjectKindSchema = v.picklist(carbotiObjectKinds);
 export const CarbotiArtifactKindSchema = v.picklist(carbotiArtifactKinds);
 export const CarbotiProcessorKindSchema = v.picklist(carbotiProcessorKinds);
 export const CarbotiSinkKindSchema = v.picklist(carbotiSinkKinds);
+export const CarbotiProcessorPermissionSchema = v.picklist(carbotiProcessorPermissions);
 export const CarbotiJobStatusSchema = v.picklist(carbotiJobStatuses);
 export const CarbotiDeliveryStatusSchema = v.picklist(carbotiDeliveryStatuses);
 
@@ -60,8 +67,60 @@ export type CarbotiObjectKind = v.InferOutput<typeof CarbotiObjectKindSchema>;
 export type CarbotiArtifactKind = v.InferOutput<typeof CarbotiArtifactKindSchema>;
 export type CarbotiProcessorKind = v.InferOutput<typeof CarbotiProcessorKindSchema>;
 export type CarbotiSinkKind = v.InferOutput<typeof CarbotiSinkKindSchema>;
+export type CarbotiProcessorPermission = v.InferOutput<typeof CarbotiProcessorPermissionSchema>;
 export type CarbotiJobStatus = v.InferOutput<typeof CarbotiJobStatusSchema>;
 export type CarbotiDeliveryStatus = v.InferOutput<typeof CarbotiDeliveryStatusSchema>;
+
+export type CarbotiProcessorCapabilityManifest = {
+  inputArtifactKinds: CarbotiArtifactKind[];
+  inputObjectKinds: CarbotiObjectKind[];
+  outputArtifactKinds: CarbotiArtifactKind[];
+  permissions: CarbotiProcessorPermission[];
+};
+
+export const carbotiDefaultProcessorCapabilityManifest = {
+  inputArtifactKinds: ["message_text", "message_html", "attachment_manifest", "normalized_json"],
+  inputObjectKinds: ["normalized_message"],
+  outputArtifactKinds: ["processor_output"],
+  permissions: ["read:message", "read:artifacts", "write:artifacts"],
+} satisfies CarbotiProcessorCapabilityManifest;
+
+export const CarbotiProcessorCapabilityManifestSchema = v.object({
+  inputArtifactKinds: v.optional(v.array(CarbotiArtifactKindSchema)),
+  inputObjectKinds: v.optional(v.array(CarbotiObjectKindSchema)),
+  outputArtifactKinds: v.optional(v.array(CarbotiArtifactKindSchema)),
+  permissions: v.optional(v.array(CarbotiProcessorPermissionSchema)),
+});
+
+export type CarbotiProcessorCapabilityManifestInput = v.InferOutput<
+  typeof CarbotiProcessorCapabilityManifestSchema
+>;
+
+export function normalizeCarbotiProcessorCapabilityManifest(
+  input: CarbotiProcessorCapabilityManifestInput = {},
+): CarbotiProcessorCapabilityManifest {
+  return {
+    inputArtifactKinds: [
+      ...(input.inputArtifactKinds ?? carbotiDefaultProcessorCapabilityManifest.inputArtifactKinds),
+    ],
+    inputObjectKinds: [
+      ...(input.inputObjectKinds ?? carbotiDefaultProcessorCapabilityManifest.inputObjectKinds),
+    ],
+    outputArtifactKinds: [
+      ...(input.outputArtifactKinds ??
+        carbotiDefaultProcessorCapabilityManifest.outputArtifactKinds),
+    ],
+    permissions: [...(input.permissions ?? carbotiDefaultProcessorCapabilityManifest.permissions)],
+  };
+}
+
+export function parseCarbotiProcessorCapabilityManifest(
+  input: unknown,
+): CarbotiProcessorCapabilityManifest {
+  return normalizeCarbotiProcessorCapabilityManifest(
+    v.parse(CarbotiProcessorCapabilityManifestSchema, input ?? {}),
+  );
+}
 
 export const CarbotiSourceSchema = v.object({
   id: v.string(),
@@ -159,6 +218,7 @@ export const CarbotiProcessorConfigSchema = v.object({
   kind: CarbotiProcessorKindSchema,
   name: v.string(),
   workspaceId: v.string(),
+  capabilityManifest: v.optional(CarbotiProcessorCapabilityManifestSchema),
   timeoutSeconds: v.optional(v.number()),
   endpointUrl: v.optional(v.string()),
   createdAt: v.string(),

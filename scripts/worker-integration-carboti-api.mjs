@@ -188,9 +188,17 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
     "submitted artifact lineage links processor run to artifact",
   );
 
+  const processorCapabilityManifest = {
+    inputArtifactKinds: ["normalized_json"],
+    inputObjectKinds: ["normalized_message"],
+    outputArtifactKinds: ["processor_output"],
+    permissions: ["read:message", "read:artifacts", "write:artifacts"],
+  };
+
   const processorResponse = await client.post(
     "/api/carboti/processors/external",
     JSON.stringify({
+      capabilityManifest: processorCapabilityManifest,
       endpointUrl: "https://processor.example.test/process",
       name: "Integration processor",
       signingSecret: processorSigningSecret,
@@ -206,6 +214,10 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
   await expectStatus(processorResponse, 201);
   const processor = await processorResponse.json();
   assert(processor.kind === "external_webhook", "external processor config is created");
+  assert(
+    processor.capabilityManifest.outputArtifactKinds.join(",") === "processor_output",
+    "external processor config returns its capability manifest",
+  );
 
   let signedRequestVerified = false;
   await withMockedFetch(
@@ -219,10 +231,18 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
       signedRequestVerified = signature === expectedSignature;
 
       const payload = JSON.parse(body);
+      assert(
+        payload.capabilityManifest.inputArtifactKinds.join(",") === "normalized_json",
+        "processor receives its capability manifest",
+      );
       assert(payload.messageId === ingest.messageId, "processor receives the message id");
       assert(
         payload.inputObject.id === ingest.normalizedMessageObjectId,
         "processor receives normalized input object",
+      );
+      assert(
+        payload.artifacts.map((artifact) => artifact.kind).join(",") === "normalized_json",
+        "processor only receives artifacts allowed by its capability manifest",
       );
       assert(
         request.headers.get("x-carboti-idempotency-key"),
@@ -314,6 +334,57 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
     },
   );
   assert(signedRequestVerified, "processor invocation signs the outbound request with HMAC");
+
+  await withMockedFetch(
+    async () =>
+      new Response(
+        JSON.stringify({
+          artifacts: [
+            {
+              data: {
+                rows: [],
+              },
+              kind: "table",
+            },
+          ],
+        }),
+        {
+          headers: {
+            "content-type": "application/json",
+          },
+          status: 200,
+        },
+      ),
+    async () => {
+      await expectApiError(
+        await client.post(
+          `/api/carboti/processors/${processor.processorId}/invoke`,
+          JSON.stringify({
+            messageId: ingest.messageId,
+          }),
+          {
+            headers: {
+              ...apiHeaders,
+              "content-type": "application/json",
+            },
+          },
+        ),
+        502,
+        "processor_capability_violation",
+      );
+
+      const capabilityRun = await env.DB.prepare(
+        "SELECT status, error_message FROM carboti_processor_runs WHERE processor_id = ? ORDER BY started_at DESC LIMIT 1",
+      )
+        .bind(processor.processorId)
+        .first();
+      assert(capabilityRun.status === "failed", "capability violation records failed run");
+      assert(
+        capabilityRun.error_message.includes("output artifact kind"),
+        "capability violation explains the rejected output kind",
+      );
+    },
+  );
 
   await withMockedFetch(
     async () =>

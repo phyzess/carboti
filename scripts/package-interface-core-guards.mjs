@@ -44,6 +44,19 @@ export function assertCoreInterfaces({ assert, core, db }) {
     "core must expose stored object schema and normalized message object kind.",
   );
 
+  const manifest = core.parseCarbotiProcessorCapabilityManifest({
+    inputArtifactKinds: ["normalized_json"],
+    outputArtifactKinds: ["processor_output"],
+  });
+  assert(
+    core.CarbotiProcessorCapabilityManifestSchema &&
+      core.carbotiProcessorPermissions.includes("read:artifacts") &&
+      manifest.inputArtifactKinds.join(",") === "normalized_json" &&
+      manifest.inputObjectKinds.join(",") === "normalized_message" &&
+      manifest.outputArtifactKinds.join(",") === "processor_output",
+    "core must expose processor capability manifest contracts with stable defaults.",
+  );
+
   assert(
     db.carbotiArtifacts &&
       db.carbotiLineageEdges &&

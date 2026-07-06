@@ -18,6 +18,8 @@ export function assertWorkerIntegrationCoverageGuards(context) {
       workerIntegration.includes("/api/carboti/processors/external") &&
       workerIntegration.includes("/api/carboti/processor-deliveries/") &&
       workerIntegration.includes("x-carboti-signature") &&
+      workerIntegration.includes("capabilityManifest") &&
+      workerIntegration.includes("processor_capability_violation") &&
       workerIntegration.includes("processor_response_failed") &&
       workerIntegration.includes("delivery_not_retryable") &&
       workerIntegration.includes("retry_of_delivery_id") &&
