@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { escapeRegExp } from "./browser-smoke-fixture.mjs";
+import { sourceFileButtonNamePattern } from "./browser-smoke-fixture.mjs";
 
 export async function confirmAndCommitSourceFile({ page, webUrl, fixture, emptySourceListWidth }) {
   const { filename } = fixture;
@@ -35,7 +35,7 @@ export async function confirmAndCommitSourceFile({ page, webUrl, fixture, emptyS
     waitUntil: "domcontentloaded",
   });
   await expect(
-    page.getByRole("button", { name: new RegExp(`${escapeRegExp(filename)}.*committed`) }),
+    page.getByRole("button", { name: sourceFileButtonNamePattern(filename, "committed") }),
   ).toBeVisible();
   await expect(page.getByText("import_job.committed", { exact: true }).first()).toBeVisible();
   await expect(

@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { escapeRegExp } from "./browser-smoke-fixture.mjs";
+import { escapeRegExp, sourceFileButtonNamePattern } from "./browser-smoke-fixture.mjs";
 
 export async function runImportDiagnosticsJourney({ page, webUrl, fixture }) {
   const { runId, filename, rejectedFilename, rejectedContent, failedFilename, failedContent } =
@@ -17,7 +17,7 @@ export async function runImportDiagnosticsJourney({ page, webUrl, fixture }) {
   await page.getByRole("button", { name: "Upload selected" }).click();
   await expect(
     page.getByRole("button", {
-      name: new RegExp(`${escapeRegExp(rejectedFilename)}.*queued`),
+      name: sourceFileButtonNamePattern(rejectedFilename, "queued"),
     }),
   ).toBeVisible();
 
@@ -44,7 +44,7 @@ export async function runImportDiagnosticsJourney({ page, webUrl, fixture }) {
 
   await page
     .getByRole("button", {
-      name: new RegExp(`${escapeRegExp(rejectedFilename)}.*queued`),
+      name: sourceFileButtonNamePattern(rejectedFilename, "queued"),
     })
     .click();
   await drainButton.click();
@@ -73,7 +73,7 @@ export async function runImportDiagnosticsJourney({ page, webUrl, fixture }) {
   await page.getByRole("button", { name: "Upload selected" }).click();
   await expect(
     page.getByRole("button", {
-      name: new RegExp(`${escapeRegExp(failedFilename)}.*queued`),
+      name: sourceFileButtonNamePattern(failedFilename, "queued"),
     }),
   ).toBeVisible();
   await drainButton.click();

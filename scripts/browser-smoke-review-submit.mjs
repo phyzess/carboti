@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { escapeRegExp } from "./browser-smoke-fixture.mjs";
+import { escapeRegExp, sourceFileButtonNamePattern } from "./browser-smoke-fixture.mjs";
 
 export async function submitReviewFixtureAndConfirmAdvisory({ page, webUrl, fixture }) {
   const { filename, appendedFilename, content, appendedContent } = fixture;
@@ -28,7 +28,7 @@ export async function submitReviewFixtureAndConfirmAdvisory({ page, webUrl, fixt
   await expect(page.getByText(appendedFilename, { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Upload selected" }).click();
   await expect(
-    page.getByRole("button", { name: new RegExp(escapeRegExp(filename)) }),
+    page.getByRole("button", { name: sourceFileButtonNamePattern(filename) }),
   ).toBeVisible();
 
   const drainButton = page.getByRole("button", { name: "Process local queue" });

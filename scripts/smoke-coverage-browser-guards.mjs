@@ -15,6 +15,7 @@ export function assertBrowserSmokeCoverageGuards(context) {
       browserSmoke.includes("Reset password") &&
       browserSmoke.includes("setInputFiles") &&
       browserSmoke.includes("browser-smoke-appended") &&
+      browserSmoke.includes("sourceFileButtonNamePattern") &&
       browserSmoke.includes("Workspace home") &&
       browserSmoke.includes("Remove upload") &&
       browserSmoke.includes("Object key") &&

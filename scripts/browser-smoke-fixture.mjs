@@ -20,3 +20,11 @@ export function createBrowserSmokeFixture(runId = Date.now()) {
 export function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+export function sourceFileButtonNamePattern(filename, status) {
+  const escapedFilename = escapeRegExp(filename);
+  if (!status) {
+    return new RegExp(`^${escapedFilename}\\b`);
+  }
+  return new RegExp(`^${escapedFilename}\\b.*\\b${escapeRegExp(status)}\\b`);
+}
