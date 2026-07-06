@@ -199,6 +199,7 @@ The first product slice is:
 1. Add MCP server.
 2. Add agent context bundle artifacts.
 3. Add policy gate and audit around agent actions.
+4. Add short-lived signed artifact access for agent retrieval.
 
 ### Phase 6: Connectors and Hosted Processors
 

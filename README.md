@@ -105,6 +105,14 @@ Developer-facing packages now include:
 @carboti/cli  Command surface for init, ingest, inspect, replay, and artifact export.
 ```
 
+Agent-facing surfaces:
+
+```text
+POST /api/carboti/mcp
+POST /api/carboti/agent/artifacts/search
+POST /api/carboti/agent/messages/:messageId/context
+```
+
 ## Roadmap
 
 1. `carboti` identity and qitu adoption baseline.

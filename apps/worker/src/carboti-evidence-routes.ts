@@ -118,7 +118,7 @@ export function registerCarbotiEvidenceRoutes(app: Hono<{ Bindings: Env }>): voi
     const auth = await requireCarbotiApiClient(context, "replay:write");
     if (!auth.ok) return auth.response;
 
-    const result = await replayMessage(context, auth.client, context.req.param("messageId"));
+    const result = await replayCarbotiMessage(context, auth.client, context.req.param("messageId"));
     return result;
   });
 }
@@ -252,7 +252,7 @@ async function readMessageLineage(
   return result.results;
 }
 
-async function replayMessage(
+export async function replayCarbotiMessage(
   context: AppContext,
   client: CarbotiApiClient,
   messageId: string,

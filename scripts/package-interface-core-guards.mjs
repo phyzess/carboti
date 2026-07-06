@@ -62,7 +62,8 @@ export function assertCoreInterfaces({ assert, core, db }) {
       core.carbotiOpenApiDocument.paths["/api/carboti/ingest/http"].post.operationId ===
         "ingestHttpObject" &&
       core.carbotiOpenApiDocument.paths["/api/carboti/processors/external"].post.operationId ===
-        "createExternalProcessor",
+        "createExternalProcessor" &&
+      core.carbotiOpenApiDocument.paths["/api/carboti/mcp"].post.operationId === "carbotiMcp",
     "core must expose the versioned Carboti OpenAPI contract.",
   );
 

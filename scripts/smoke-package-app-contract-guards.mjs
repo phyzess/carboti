@@ -53,9 +53,13 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes('app.post("/api/carboti/processors/external"') &&
       workerSources.includes('app.post("/api/carboti/processors/:processorId/invoke"') &&
       workerSources.includes('app.post("/api/carboti/processor-deliveries/:deliveryId/retry"') &&
+      workerSources.includes('app.post("/api/carboti/mcp"') &&
+      workerSources.includes('app.post("/api/carboti/agent/artifacts/search"') &&
+      workerSources.includes('app.post("/api/carboti/agent/artifacts/:artifactId/access"') &&
       workerSources.includes('"artifacts:write"') &&
       workerSources.includes('"processors:invoke"') &&
       workerSources.includes('"processors:write"') &&
+      workerSources.includes('"agent:read"') &&
       workerSources.includes("carboti_api_clients") &&
       workerSources.includes("carboti_processor_runs") &&
       workerSources.includes("carboti_webhook_deliveries") &&
@@ -71,6 +75,10 @@ export function assertPackageAppContractGuards(context) {
       workerSources.includes("encryptCarbotiSecret") &&
       workerSources.includes("processor_secret_store_unavailable") &&
       workerSources.includes("carbotiOpenApiDocument") &&
+      workerSources.includes("agent_context_bundle") &&
+      workerSources.includes("carboti.agent.context_bundle.created") &&
+      workerSources.includes("carboti.retrieve_context") &&
+      workerSources.includes("artifact_access_expired") &&
       !workerSources.includes("inline-signing-key") &&
       workerSources.includes("retry_of_delivery_id") &&
       workerSources.includes("HMAC") &&

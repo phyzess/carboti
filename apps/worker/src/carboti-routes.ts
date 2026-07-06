@@ -1,4 +1,5 @@
 import type { Hono } from "hono";
+import { registerCarbotiAgentRoutes } from "./carboti-agent-routes";
 import { registerCarbotiArtifactSubmitRoute } from "./carboti-artifact-submit-route";
 import {
   registerCarbotiContractRoute,
@@ -14,5 +15,6 @@ export function registerCarbotiRoutes(app: Hono<{ Bindings: Env }>): void {
   registerCarbotiHttpIngestRoute(app);
   registerCarbotiArtifactSubmitRoute(app);
   registerCarbotiProcessorRoutes(app);
+  registerCarbotiAgentRoutes(app);
   registerCarbotiEvidenceRoutes(app);
 }

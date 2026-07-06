@@ -22,6 +22,9 @@ export const carbotiOpenApiDocument = {
     {
       name: "Replay",
     },
+    {
+      name: "Agents",
+    },
   ],
   components: {
     responses: {
@@ -553,6 +556,198 @@ export const carbotiOpenApiDocument = {
           },
         ],
         tags: ["Processors"],
+      },
+    },
+    "/api/carboti/agent/artifacts/search": {
+      post: {
+        operationId: "agentSearchArtifacts",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                additionalProperties: false,
+                properties: {
+                  kinds: {
+                    items: {
+                      $ref: "#/components/schemas/ArtifactKind",
+                    },
+                    type: "array",
+                  },
+                  limit: {
+                    maximum: 20,
+                    minimum: 1,
+                    type: "number",
+                  },
+                  messageId: {
+                    type: "string",
+                  },
+                  query: {
+                    type: "string",
+                  },
+                },
+                type: "object",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Agent-safe artifact metadata without raw object bytes.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Agents"],
+      },
+    },
+    "/api/carboti/agent/artifacts/{artifactId}/inspect": {
+      get: {
+        operationId: "agentInspectArtifact",
+        parameters: [
+          {
+            in: "path",
+            name: "artifactId",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Agent-safe artifact metadata with a bounded data preview.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Agents"],
+      },
+    },
+    "/api/carboti/agent/artifacts/{artifactId}/access": {
+      post: {
+        operationId: "agentCreateArtifactAccess",
+        parameters: [
+          {
+            in: "path",
+            name: "artifactId",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                additionalProperties: false,
+                properties: {
+                  ttlSeconds: {
+                    maximum: 900,
+                    minimum: 1,
+                    type: "number",
+                  },
+                },
+                type: "object",
+              },
+            },
+          },
+        },
+        responses: {
+          "201": {
+            description: "Created a short-lived signed artifact access token.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Agents"],
+      },
+    },
+    "/api/carboti/agent/artifact-access/{token}": {
+      get: {
+        operationId: "agentReadSignedArtifact",
+        parameters: [
+          {
+            in: "path",
+            name: "token",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "Artifact data authorized by a short-lived signed token.",
+          },
+          "410": {
+            $ref: "#/components/responses/ApiError",
+          },
+        },
+        security: [],
+        tags: ["Agents"],
+      },
+    },
+    "/api/carboti/agent/messages/{messageId}/context": {
+      post: {
+        operationId: "agentCreateContextBundle",
+        parameters: [
+          {
+            in: "path",
+            name: "messageId",
+            required: true,
+            schema: {
+              type: "string",
+            },
+          },
+        ],
+        responses: {
+          "201": {
+            description: "Created an agent_context_bundle artifact from eligible artifacts.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Agents"],
+      },
+    },
+    "/api/carboti/mcp": {
+      post: {
+        operationId: "carbotiMcp",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                additionalProperties: true,
+                type: "object",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description:
+              "MCP JSON-RPC endpoint exposing search, inspect, retrieve, and replay tools.",
+          },
+        },
+        security: [
+          {
+            bearerAuth: [],
+          },
+        ],
+        tags: ["Agents"],
       },
     },
   },

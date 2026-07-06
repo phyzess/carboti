@@ -97,6 +97,14 @@ GET /api/carboti/openapi.json
 @carboti/cli  init、ingest、inspect、replay、artifact export 命令表面。
 ```
 
+面向 agent 的入口：
+
+```text
+POST /api/carboti/mcp
+POST /api/carboti/agent/artifacts/search
+POST /api/carboti/agent/messages/:messageId/context
+```
+
 ## 路线图
 
 1. 完成 `carboti` identity 与 qitu adoption baseline。

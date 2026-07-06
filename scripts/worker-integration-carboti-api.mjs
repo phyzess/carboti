@@ -25,8 +25,9 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
       openApi.paths["/api/carboti/processors/external"].post.operationId ===
         "createExternalProcessor" &&
       openApi.paths["/api/carboti/processor-deliveries/{deliveryId}/retry"].post.operationId ===
-        "retryProcessorDelivery",
-    "Carboti OpenAPI covers ingest, external processor, and retry routes",
+        "retryProcessorDelivery" &&
+      openApi.paths["/api/carboti/mcp"].post.operationId === "carbotiMcp",
+    "Carboti OpenAPI covers ingest, external processor, retry, and MCP routes",
   );
 
   await expectApiError(
@@ -115,6 +116,152 @@ export async function testCarbotiHttpIngestAndReplay({ client, env }) {
     lineageRelations === "normalized_to,processed_into,processed_into",
     "HTTP ingest records raw-to-normalized and normalized-to-artifact lineage",
   );
+
+  const agentSearch = await client.post(
+    "/api/carboti/agent/artifacts/search",
+    JSON.stringify({
+      kinds: ["normalized_json"],
+      limit: 5,
+      messageId: ingest.messageId,
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(agentSearch, 200);
+  const agentSearchResult = await agentSearch.json();
+  assert(
+    agentSearchResult.artifacts.length === 1 &&
+      agentSearchResult.artifacts[0].kind === "normalized_json" &&
+      !("data" in agentSearchResult.artifacts[0]),
+    "agent artifact search returns safe metadata without artifact data",
+  );
+
+  const agentInspect = await client.json(
+    `/api/carboti/agent/artifacts/${agentSearchResult.artifacts[0].id}/inspect`,
+    {
+      headers: apiHeaders,
+    },
+  );
+  assert(
+    agentInspect.artifact.dataPreview.includes("rawObjectRef"),
+    "agent artifact inspect returns a bounded preview",
+  );
+
+  const agentAccessResponse = await client.post(
+    `/api/carboti/agent/artifacts/${agentSearchResult.artifacts[0].id}/access`,
+    JSON.stringify({
+      ttlSeconds: 60,
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(agentAccessResponse, 201);
+  const agentAccess = await agentAccessResponse.json();
+  assert(agentAccess.token && agentAccess.url, "agent artifact access returns a signed token");
+
+  const signedArtifact = await client.json(agentAccess.url);
+  assert(
+    signedArtifact.artifact.id === agentSearchResult.artifacts[0].id &&
+      signedArtifact.artifact.data.rawObjectRef.objectKey === ingest.rawObject.objectKey,
+    "signed artifact access can retrieve the artifact without bearer auth",
+  );
+
+  const agentContextResponse = await client.post(
+    `/api/carboti/agent/messages/${ingest.messageId}/context`,
+    JSON.stringify({
+      artifactKinds: ["normalized_json"],
+      limit: 2,
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(agentContextResponse, 201);
+  const agentContext = await agentContextResponse.json();
+  assert(
+    agentContext.kind === "agent_context_bundle" && agentContext.itemCount === 1,
+    "agent context bundle is created from eligible artifacts",
+  );
+
+  const agentContextArtifact = await client.json(
+    `/api/carboti/artifacts/${agentContext.artifactId}`,
+    {
+      headers: apiHeaders,
+    },
+  );
+  assert(
+    agentContextArtifact.artifact.kind === "agent_context_bundle" &&
+      agentContextArtifact.artifact.data.policy.rawObjectsIncluded === false,
+    "agent context bundle stores safe retrieval policy",
+  );
+
+  const mcpToolsResponse = await client.post(
+    "/api/carboti/mcp",
+    JSON.stringify({
+      id: 1,
+      jsonrpc: "2.0",
+      method: "tools/list",
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(mcpToolsResponse, 200);
+  const mcpTools = await mcpToolsResponse.json();
+  assert(
+    mcpTools.result.tools.some((tool) => tool.name === "carboti.retrieve_context") &&
+      mcpTools.result.tools.some((tool) => tool.name === "carboti.replay_message"),
+    "MCP endpoint lists stable Carboti agent tools",
+  );
+
+  const mcpRetrieveResponse = await client.post(
+    "/api/carboti/mcp",
+    JSON.stringify({
+      id: 2,
+      jsonrpc: "2.0",
+      method: "tools/call",
+      params: {
+        arguments: {
+          artifactKinds: ["normalized_json"],
+          messageId: ingest.messageId,
+        },
+        name: "carboti.retrieve_context",
+      },
+    }),
+    {
+      headers: {
+        ...apiHeaders,
+        "content-type": "application/json",
+      },
+    },
+  );
+  await expectStatus(mcpRetrieveResponse, 200);
+  const mcpRetrieve = await mcpRetrieveResponse.json();
+  assert(
+    JSON.parse(mcpRetrieve.result.content[0].text).kind === "agent_context_bundle",
+    "MCP retrieve_context creates an agent context bundle",
+  );
+
+  const agentAudit = await env.DB.prepare(
+    "SELECT COUNT(*) AS count FROM audit_events WHERE action IN (?, ?)",
+  )
+    .bind("carboti.agent.artifacts.searched", "carboti.agent.context_bundle.created")
+    .first();
+  assert(agentAudit.count >= 2, "agent reads and context creation are audited");
 
   await expectApiError(
     await client.post(
@@ -632,6 +779,7 @@ async function seedApiClient(env) {
         "processors:invoke",
         "processors:write",
         "replay:write",
+        "agent:read",
       ]),
       "active",
       now,

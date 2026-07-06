@@ -10,7 +10,8 @@ export type CarbotiApiScope =
   | "lineage:read"
   | "processors:invoke"
   | "processors:write"
-  | "replay:write";
+  | "replay:write"
+  | "agent:read";
 
 export type CarbotiApiClient = {
   id: string;
@@ -75,7 +76,7 @@ export async function requireCarbotiApiClient(
     workspaceId: row.workspace_id,
   };
 
-  if (!hasScope(client, scope)) {
+  if (!carbotiApiClientHasScope(client, scope)) {
     return {
       ok: false,
       response: authError(context, "insufficient_scope", "API token scope is insufficient.", 403),
@@ -102,7 +103,10 @@ function bearerToken(context: AppContext): string | null {
   return token.length > 0 ? token : null;
 }
 
-function hasScope(client: CarbotiApiClient, scope: CarbotiApiScope): boolean {
+export function carbotiApiClientHasScope(
+  client: CarbotiApiClient,
+  scope: CarbotiApiScope,
+): boolean {
   return client.scopes.includes("*") || client.scopes.includes(scope);
 }
 

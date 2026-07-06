@@ -13,6 +13,8 @@ export function assertWorkerIntegrationCoverageGuards(context) {
       workerIntegration.includes("/api/source-files") &&
       workerIntegration.includes("/api/carboti/openapi.json") &&
       workerIntegration.includes("/api/carboti/ingest/http") &&
+      workerIntegration.includes("/api/carboti/agent/artifacts/search") &&
+      workerIntegration.includes("/api/carboti/mcp") &&
       workerIntegration.includes("/api/carboti/messages/") &&
       workerIntegration.includes("not_a_real_artifact") &&
       workerIntegration.includes("external.ledger.summary.v1") &&
@@ -21,6 +23,9 @@ export function assertWorkerIntegrationCoverageGuards(context) {
       workerIntegration.includes("x-carboti-signature") &&
       workerIntegration.includes("capabilityManifest") &&
       workerIntegration.includes("processor_capability_violation") &&
+      workerIntegration.includes("agent_context_bundle") &&
+      workerIntegration.includes("carboti.retrieve_context") &&
+      workerIntegration.includes("carboti.agent.context_bundle.created") &&
       workerIntegration.includes("signingSecretRef") &&
       workerIntegration.includes("carboti_secret_refs") &&
       workerIntegration.includes("processor_response_failed") &&
